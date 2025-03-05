@@ -1,0 +1,13 @@
+# Node.js dependencies
+node_modules/
+
+# VS Code settings
+.vscode/
+
+# Logs and temp files
+*.log
+*.tmp
+
+# OS-specific files
+.DS_Store  # macOS
+Thumbs.db  # Windows
