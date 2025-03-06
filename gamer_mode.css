@@ -1,0 +1,155 @@
+/* General styling */
+body {
+    background-color: #1a1a2e;
+    color: #ffffff;
+    font-family: 'Roboto', 'Segoe UI', sans-serif;
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Container for all content */
+.container {
+    width: 90%;
+    max-width: 1200px;
+    background-color: #16213e;
+    border-radius: 10px;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    padding: 2rem;
+}
+
+/* Header styling */
+h1 {
+    text-align: center;
+    color: #4da8da;
+    margin-bottom: 2rem;
+    font-size: 2.5rem;
+}
+
+/* Home page styling */
+.room-selection {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    align-items: center;
+    padding: 2rem 0;
+}
+
+button {
+    background-color: #0f3460;
+    color: white;
+    border: none;
+    padding: 1rem 2rem;
+    border-radius: 50px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 250px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+button:hover {
+    background-color: #4da8da;
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(77, 168, 218, 0.4);
+}
+
+/* Room page styling */
+#videos {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin: 2rem 0;
+}
+
+.video-player {
+    background-color: #0a0a1a;
+    width: 100%;
+    height: 350px;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+/* Controls styling */
+.controls {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-top: 2rem;
+}
+
+/* Navigation buttons */
+.nav-buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 2rem;
+}
+
+.back-button, .invite-button {
+    background-color: transparent;
+    border: 2px solid #4da8da;
+    color: #4da8da;
+    width: auto;
+    padding: 0.8rem 1.5rem;
+}
+
+.back-button:hover, .invite-button:hover {
+    background-color: #4da8da;
+    color: white;
+}
+
+/* Join room form */
+.join-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    margin: 2rem 0;
+}
+
+input {
+    padding: 1rem;
+    width: 100%;
+    max-width: 400px;
+    background-color: #0f3460;
+    border: none;
+    border-radius: 50px;
+    color: white;
+    text-align: center;
+    font-size: 1rem;
+}
+
+input::placeholder {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.join-button {
+    background-color: #e94560;
+}
+
+.join-button:hover {
+    background-color: #ff6b81;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    #videos {
+        grid-template-columns: 1fr;
+    }
+    
+    .container {
+        width: 95%;
+        padding: 1rem;
+    }
+    
+    h1 {
+        font-size: 2rem;
+    }
+}
