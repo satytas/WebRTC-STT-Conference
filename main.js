@@ -179,14 +179,22 @@ document.getElementById('createRoomBtn').addEventListener('click', async () => {
 });
 
 document.getElementById('joinRoomBtn').addEventListener('click', () => {
+    window.history.pushState({}, '', '/join');
     landing.style.display = 'none';
     joinPrompt.style.display = 'block';
+});
+
+document.getElementById('joinBackBtn').addEventListener('click', () => {
+    document.getElementById('roomIdInput').value = '';
+    showLanding()
+    window.history.pushState({}, '', '/');
 });
 
 document.getElementById('joinSubmitBtn').addEventListener('click', async () => {
     const roomId = document.getElementById('roomIdInput').value.trim();
     if (!roomId) return alert('Please enter a Room ID');
     window.history.pushState({}, '', `/${roomId}`);
+    document.getElementById('roomIdInput').value = '';
     showRoom();
     await client.initialize();
     client.connectWebSocket(roomId);
