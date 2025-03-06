@@ -11,3 +11,6 @@ node_modules/
 # OS-specific files
 .DS_Store  # macOS
 Thumbs.db  # Windows
+
+#text files
+*.txt
