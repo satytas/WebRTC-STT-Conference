@@ -48,7 +48,6 @@ button:active {
   transform: translateY(-1px);
 }
 
-/* Landing page styling */
 .button-container {
   display: flex;
   flex-direction: column;
@@ -72,7 +71,6 @@ button:active {
   width: 100%;
 }
 
-/* Form styling */
 input {
   background-color: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -99,7 +97,6 @@ input {
   border-radius: 12px;
 }
 
-/* Room styling */
 #room {
   width: 90%;
   max-width: 1200px;
@@ -202,10 +199,6 @@ input {
   width: 100px;
 }
 
-.control-button svg {
-  margin-bottom: 5px;
-}
-
 .control-button.danger {
   background-color: #e63946;
 }
@@ -214,7 +207,6 @@ input {
   background-color: #d62828;
 }
 
-/* Responsive adjustments */
 @media (max-width: 768px) {
   #videos {
     grid-template-columns: 1fr;

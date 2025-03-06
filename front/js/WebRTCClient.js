@@ -1,37 +1,9 @@
-function getRoomIdFromUrl() {
-    const path = window.location.pathname;
-    if (path.length > 1) {
-      return path.substring(1); // e.g., '92vy3b' from '/92vy3b'
-    }
-    return null;
-  }
-
-window.addEventListener('load', async () => {
-    const roomId = getRoomIdFromUrl();
-    if (roomId) {
-      showRoom(); // Your function to show the room UI
-      await client.initialize(); // Your WebRTC client init (if applicable)
-      client.connectWebSocket(roomId); // Connect to the room
-    } else {
-      showLanding(); // Your function to show the landing page
-    }
-});
-
-window.addEventListener('popstate', () => {
-    const roomId = getRoomIdFromUrl();
-    if (roomId) {
-        showRoom();
-    } else {
-        showLanding();
-    }
-});
-
 const iceServers = [
     { urls: "stun:stun.l.google.com:19302" },
     { urls: "stun:stun1.l.google.com:3478" }
 ];
 
-class WebRTCClient {
+export class WebRTCClient {
     constructor() {
         this.userId = null;
         this.roomId = null;
@@ -46,6 +18,7 @@ class WebRTCClient {
         try {
             this.localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
             document.getElementById('localVideo').srcObject = this.localStream;
+
             await this.createPeerConnection();
         } catch (err) {
             console.error('Failed to initialize media:', err);
@@ -126,7 +99,7 @@ class WebRTCClient {
     }
 
     sendToUser(target, type, data) {
-        this.channelWS.send(JSON.stringify({ target, type, data, from: this.userId }));
+        this.channelWS.send(JSON.stringify({target, type, data, from: this.userId }));
     }
 
     sendToAllUsers(type, data) {
@@ -147,65 +120,3 @@ class WebRTCClient {
         this.roomId = null;
     }
 }
-
-const client = new WebRTCClient();
-
-// UI Logic
-const landing = document.getElementById('landing');
-const roomDiv = document.getElementById('room');
-const joinPrompt = document.getElementById('joinPrompt');
-const inviteBtn = document.getElementById('inviteBtn');
-const backBtn = document.getElementById('backBtn');
-
-function showLanding() {
-    landing.style.display = 'block';
-    roomDiv.style.display = 'none';
-    joinPrompt.style.display = 'none';
-    client.disconnect();
-}
-
-function showRoom() {
-    landing.style.display = 'none';
-    roomDiv.style.display = 'block';
-    joinPrompt.style.display = 'none';
-}
-
-document.getElementById('createRoomBtn').addEventListener('click', async () => {
-    const roomId = Math.random().toString(36).substring(2, 8); // Random 6-char ID
-    window.history.pushState({}, '', `/${roomId}`);
-    showRoom();
-    await client.initialize();
-    client.connectWebSocket(roomId);
-});
-
-document.getElementById('joinRoomBtn').addEventListener('click', () => {
-    window.history.pushState({}, '', '/join');
-    landing.style.display = 'none';
-    joinPrompt.style.display = 'block';
-});
-
-document.getElementById('joinBackBtn').addEventListener('click', () => {
-    document.getElementById('roomIdInput').value = '';
-    showLanding()
-    window.history.pushState({}, '', '/');
-});
-
-document.getElementById('joinSubmitBtn').addEventListener('click', async () => {
-    const roomId = document.getElementById('roomIdInput').value.trim();
-    if (!roomId) return alert('Please enter a Room ID');
-    window.history.pushState({}, '', `/${roomId}`);
-    document.getElementById('roomIdInput').value = '';
-    showRoom();
-    await client.initialize();
-    client.connectWebSocket(roomId);
-});
-
-inviteBtn.addEventListener('click', () => {
-    const url = window.location.href;
-    navigator.clipboard.writeText(url).then(() => alert('Room URL copied to clipboard!'));
-});
-
-backBtn.addEventListener('click', () => {
-    window.history.pushState({}, '', '/');
-    showLanding();
-});
