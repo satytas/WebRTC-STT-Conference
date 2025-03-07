@@ -10,20 +10,19 @@
     <div id="landing">
         <h1 id="titleLbl">Welcome to Saty's.. Saty's smth.. hm...</h1>
         <div class="button-container">
-            <button id="joinRoomBtn">Join With Code</button>
-            <button id="createRoomBtn">Create Room</button>
+            <button id="joinPromptBtn">Join With Code</button>
+            <button id="createPromptBtn">Create Room</button>
         </div>
     </div>
 
     <div id="room" style="display: none;">
         <h1>Room</h1>
         <div class="room-header">
-    
             <div class="room-info">
                 <div class="info-item">
                     <span class="info-label">Room ID:</span>
                     <span id="roomIdDisplay">Loading...</span>
-                    <button id="copyRoomId" class="icon-button" title="Copy Room ID">
+                    <button id="copyRoomIdBtn" class="icon-button" title="Copy Room ID">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                             <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
@@ -74,7 +73,7 @@
                 </svg>
                 <span>Invite</span>
             </button>
-            <button id="backBtn" class="control-button danger">
+            <button id="leaveRoomBtn" class="control-button danger">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                     <polyline points="16 17 21 12 16 7"></polyline>
@@ -89,9 +88,25 @@
         <h1>Join Room</h1>
         <input type="text" id="roomIdInput" placeholder="Enter Room ID">
         <div class="button-container">
-            <button id="joinSubmitBtn">Join Room</button>
-            <button id="joinBackBtn">Back</button>
+            <button id="joinPromptJoinBtn">Join Room</button>
+            <button id="joinPromptBackBtn">Back</button>
         </div>
+    </div>
+
+    <div id="createPrompt" style="display: none;">
+        <h1>Create Room</h1>
+        <input type="text" id="createPasswordInput" placeholder="Enter Password (leave empty for no password)">
+        <div class="button-container">
+            <button id="createPromptJoinBtn">Create Room</button>
+            <button id="createPromptBackBtn">Back</button>
+        </div>
+    </div>
+
+    <div id="passwordPrompt" style="display: none;">
+        <h1>This Room has a Password</h1>
+        <input type="password" id="passwordPromptInput" placeholder="Enter password">
+        <button id="passwordPromptJoinBtn">Join</button>
+        <button id="passwordPromptBackBtn">Back</button>
     </div>
     <script type="module" src="js/main.js"></script>
 </body>

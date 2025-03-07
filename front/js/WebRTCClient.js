@@ -47,14 +47,16 @@ export class WebRTCClient {
         };
     }
 
-    connectWebSocket(roomId) {
+    connectWebSocket(roomId, userId) {
         this.roomId = roomId;
+        this.userId = userId;
         this.channelWS = new WebSocket("ws://localhost:8080");
 
         this.channelWS.onopen = () => {
             this.channelWS.send(JSON.stringify({
                 type: 'join-room',
                 roomId: this.roomId,
+                userId: this.userId
             }));
         };
 
@@ -64,6 +66,7 @@ export class WebRTCClient {
                 case 'welcome':
                     this.userId = data.userId;
                     this.roomId = data.roomId;
+                    document.getElementById('roomIdDisplay').textContent = this.roomId;
                     console.log(`You (${this.userId}) joined room (${this.roomId})`);
                     break;
                 case 'new-user':
