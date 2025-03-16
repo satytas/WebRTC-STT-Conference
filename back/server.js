@@ -65,6 +65,9 @@ wss.on('connection', ws => {
                 }
             }
         }
+        else if (data.type === 'validate-password') {
+                ws.send(JSON.stringify({ type: 'password-validation', success: rooms.get(data.roomId).password === data.password }));
+        }
         else {
             const room = Array.from(rooms.entries()).find(([_, users]) => users.has(ws));
             if (!room) return;

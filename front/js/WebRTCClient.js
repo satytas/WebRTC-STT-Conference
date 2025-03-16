@@ -4,27 +4,37 @@ const iceServers = [
 ];
 
 export class WebRTCClient {
-    constructor() {
-        this.userId = null;
+    constructor(signalingClient) {
+        this.signalingClient = signalingClient;
+        this.userId = signalingClient.userId;
         this.roomId = null;
         this.users = new Set();
         this.localStream = null;
         this.remoteStream = null;
         this.peerConnection = null;
-        this.channelWS = null;
+
+        // Register handlers for WebRTC signaling messages
+        this.signalingClient.setHandler('new-user-ready', this.handleNewUser.bind(this));
+        this.signalingClient.setHandler('offer', this.handleOffer.bind(this));
+        this.signalingClient.setHandler('answer', this.handleAnswer.bind(this));
+        this.signalingClient.setHandler('ice-candidate', this.handleIceCandidate.bind(this));
+        this.signalingClient.setHandler('user-left', this.handleUserLeft.bind(this));
+        console.log(`WebRTCClient initialized for user: ${this.userId}`);
     }
 
+    // Initialize media and peer connection
     async initialize() {
         try {
             this.localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
             document.getElementById('localVideo').srcObject = this.localStream;
-
             await this.createPeerConnection();
+            console.log("WebRTCClient initialized with local stream");
         } catch (err) {
-            console.error('Failed to initialize media:', err);
+            console.error("Failed to initialize media:", err);
         }
     }
 
+    // Create a new peer connection
     async createPeerConnection() {
         this.peerConnection = new RTCPeerConnection({ iceServers });
         this.remoteStream = new MediaStream();
@@ -38,88 +48,81 @@ export class WebRTCClient {
             event.streams[0].getTracks().forEach(track => {
                 this.remoteStream.addTrack(track);
             });
+            console.log("Received remote track");
         };
 
         this.peerConnection.onicecandidate = event => {
             if (event.candidate) {
                 this.sendToAllUsers('ice-candidate', event.candidate);
+                console.log("Sent ICE candidate", event.candidate);
             }
         };
+        console.log("Peer connection created");
     }
 
-    connectWebSocket(roomId, userId) {
-        this.roomId = roomId;
-        this.userId = userId;
-        this.channelWS = new WebSocket("ws://localhost:8080");
-
-        this.channelWS.onopen = () => {
-            this.channelWS.send(JSON.stringify({
-                type: 'join-room',
-                roomId: this.roomId,
-                userId: this.userId
-            }));
-        };
-
-        this.channelWS.onmessage = async event => {
-            const data = JSON.parse(event.data);
-            switch (data.type) {
-                case 'welcome':
-                    this.userId = data.userId;
-                    this.roomId = data.roomId;
-                    document.getElementById('roomIdDisplay').textContent = this.roomId;
-                    console.log(`You (${this.userId}) joined room (${this.roomId})`);
-                    break;
-                case 'new-user':
-                    this.users.add(data.userId);
-                    this.handleUserJoined(data.userId);
-                    break;
-                case 'offer':
-                    this.createAnswer(data.from, data.data);
-                    break;
-                case 'answer':
-                    this.peerConnection.setRemoteDescription(data.data);
-                    break;
-                case 'ice-candidate':
-                    this.peerConnection.addIceCandidate(data.data);
-                    break;
-            }
-        };
-
-        this.channelWS.onerror = err => console.error('WebSocket error:', err);
-    }
-
-    async handleUserJoined(memberId) {
+    // Handle a new user joining
+    async handleNewUser(data) {
+        const { userId } = data;
+        this.users.add(userId);
         const offer = await this.peerConnection.createOffer();
         await this.peerConnection.setLocalDescription(offer);
-        this.sendToUser(memberId, 'offer', offer);
+        this.sendToUser(userId, 'offer', offer);
+        console.log(`Created and sent offer to user: ${userId}`);
     }
 
-    async createAnswer(memberId, offer) {
+    // Handle an incoming offer
+    async handleOffer(data) {
+        const { from, data: offer } = data;
         await this.peerConnection.setRemoteDescription(offer);
         const answer = await this.peerConnection.createAnswer();
         await this.peerConnection.setLocalDescription(answer);
-        this.sendToUser(memberId, 'answer', answer);
+        this.sendToUser(from, 'answer', answer);
+        console.log(`Received offer from ${from}, sent answer`);
     }
 
+    // Handle an incoming answer
+    async handleAnswer(data) {
+        const { data: answer } = data;
+        await this.peerConnection.setRemoteDescription(answer);
+        console.log("Received and set answer");
+    }
+
+    // Handle an incoming ICE candidate
+    async handleIceCandidate(data) {
+        const { data: candidate } = data;
+        await this.peerConnection.addIceCandidate(candidate);
+        console.log("Added ICE candidate", candidate);
+    }
+
+    // Handle a user leaving
+    handleUserLeft(data) {
+        this.users.delete(data.userId);
+        if (this.peerConnection) {
+            this.peerConnection.close();
+            this.peerConnection = null;
+            document.getElementById('remoteVideo').srcObject = null;
+            console.log(`User ${data.userId} left, closed peer connection`);
+        }
+    }
+
+    // Send a message to a specific user
     sendToUser(target, type, data) {
-        this.channelWS.send(JSON.stringify({target, type, data, from: this.userId }));
+        this.signalingClient.sendToUser(target, type, data);
     }
 
+    // Send a message to all users
     sendToAllUsers(type, data) {
         this.users.forEach(memberId => this.sendToUser(memberId, type, data));
     }
 
+    // Clean up WebRTC resources
     disconnect() {
-        if (this.channelWS) {
-            this.channelWS.close();
-            this.channelWS = null;
-        }
         if (this.peerConnection) {
             this.peerConnection.close();
             this.peerConnection = null;
         }
         this.users.clear();
-        this.userId = null;
         this.roomId = null;
+        console.log("WebRTCClient disconnected");
     }
 }

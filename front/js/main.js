@@ -1,3 +1,4 @@
+import { SignalingClient } from './SignalingClient.js';
 import { WebRTCClient } from './WebRTCClient.js';
 
 // DOM references
@@ -7,9 +8,9 @@ const joinPrompt = document.getElementById('joinPrompt');
 const createPrompt = document.getElementById('createPrompt');
 const passwordPrompt = document.getElementById('passwordPrompt');
 
-const client = new WebRTCClient();
-let roomId = new URLSearchParams(window.location.search).get('room_id')
-function getUserId(){
+let roomId = new URLSearchParams(window.location.search).get('room_id');
+
+function getUserId() {
     let userId = sessionStorage.getItem('userId');
     if (!userId) {
         userId = Math.random().toString(36).slice(2, 6);
@@ -17,13 +18,13 @@ function getUserId(){
     }
     return userId;
 }
-console.log("userId: ", getUserId());
 
+const signalingClient = new SignalingClient(getUserId());
+const webRTCClient = new WebRTCClient(signalingClient);
 
-//Routing
-async function handleRouting(){
+// Routing
+async function handleRouting() {
     const page = window.location.pathname.split("?")[0];
-
     switch (page) {
         case '/create_room':
             showPage(createPrompt);
@@ -32,17 +33,20 @@ async function handleRouting(){
             showPage(joinPrompt);
             break;
         case '/room':
-            if(new URLSearchParams(window.location.search).get('room_id')?.match(/^[a-zA-Z0-9_-]+$/)){
+            if (roomId?.match(/^[a-zA-Z0-9_-]+$/)) {
+                console.log("trying entering room from link prolly");
+                
+                await webRTCClient.initialize();
+                await signalingClient.enterRoom(roomId);
+
+                console.log("finishde the await enter room");
                 showPage(roomDiv);
-                await client.initialize();
-                client.connectWebSocket(roomId, getUserId());
                 document.getElementById('roomIdDisplay').textContent = roomId;
-            }
-            else{
+                
+            } else {
                 window.history.pushState({}, '', '/');
                 showPage(landing);
             }
-            
             break;
         default:
             window.history.pushState({}, '', '/');
@@ -51,153 +55,127 @@ async function handleRouting(){
     }
 }
 
-window.addEventListener('load', async () => handleRouting())
+window.addEventListener('load', () => handleRouting());
+window.addEventListener('popstate', () => handleRouting());
 
-window.addEventListener('popstate', async () => handleRouting())
-
-
-//UI
+// UI
 function showPage(page) {
     landing.style.display = 'none';
     joinPrompt.style.display = 'none';
     createPrompt.style.display = 'none';
     roomDiv.style.display = 'none';
     passwordPrompt.style.display = 'none';
-
     page.style.display = 'block';
 }
 
-document.getElementById('createPromptBtn').addEventListener('click', () => {
-    window.history.pushState({}, '', '/create_room');
-    showPage(createPrompt);
+// Event Listeners
+document.getElementById('joinPromptJoinBtn').addEventListener('click', async () => {
+    roomId = document.getElementById('roomIdInput').value.trim();
+    if (!roomId) return alert('Please enter a Room ID');
+
+    try {
+        const result = await signalingClient.validateRoom(roomId);
+        console.log("tried connecting with room, res- ", result);
+        if (!result.exists) {
+            alert('Room does not exist');
+        } else if (!result.passwordRequired) {
+            await webRTCClient.initialize();
+            await signalingClient.enterRoom(roomId);
+            showPage(roomDiv);
+            document.getElementById('roomIdDisplay').textContent = roomId;
+            
+        } else {
+            console.log("aight moving to pass prompt");
+            showPage(passwordPrompt);
+        }
+    } catch (err) {
+        console.error(err);
+    }
 });
+
+document.getElementById('passwordPromptJoinBtn').addEventListener('click', async () => {
+    const password = document.getElementById('passwordPromptInput').value.trim();
+    try {
+        console.log("trying to validate password");
+        const result = await signalingClient.validatePassword(roomId, password);
+        console.log("validated password");
+
+        console.log("tried connecting with room, res- ", result);
+        if (result.success) {
+            console.log("aight moving to room");
+            await webRTCClient.initialize();
+            await signalingClient.enterRoom(roomId);
+            window.history.pushState({}, '', `/room?room_id=${roomId}`);
+            showPage(roomDiv);
+            document.getElementById('roomIdDisplay').textContent = roomId;
+            
+        } else {
+            alert('Invalid password');
+        }
+    } catch (err) {
+        console.error(err);
+    }
+});
+
 document.getElementById('createPromptJoinBtn').addEventListener('click', async () => {
     const password = document.getElementById('createPasswordInput').value.trim();
-
-    const ws = new WebSocket("ws://localhost:8080");
-    ws.onopen = () => {
-        ws.send(JSON.stringify({
-            type: 'create-room',
-            password: password || null
-        }));
-    };
-
-    ws.onmessage = async (event) => {
-        const data = JSON.parse(event.data);
-        if (data.type === 'room-created') {
-            if (data.success) {
-                ws.close();
-
-                roomId = data.roomId
-                window.history.pushState({}, '', `/room?room_id=${roomId}`);
-                showPage(roomDiv);
-                document.getElementById('roomIdDisplay').textContent = roomId;
-
-                await client.initialize();
-                client.connectWebSocket(roomId, getUserId());
-            } else {
-                alert(data.message);
-            }
+    try {
+        const result = await signalingClient.createRoom(password);
+        if (result.success) {
+            roomId = result.roomId;
+            await webRTCClient.initialize();
+            await signalingClient.enterRoom(roomId);
+            window.history.pushState({}, '', `/room?room_id=${roomId}`);
+            showPage(roomDiv);
+            document.getElementById('roomIdDisplay').textContent = roomId;
+        } else {
+            alert('Room creation failed');
         }
-    };
+    } catch (err) {
+        console.error(err);
+    }
 });
+
+// Other event listeners (back buttons, invite, leave, etc.) remain similar, just update calls
 document.getElementById('createPromptBackBtn').addEventListener('click', () => {
     window.history.pushState({}, '', '/');
     document.getElementById('createPasswordInput').value = '';
     showPage(landing);
-})
+});
+
 document.getElementById('joinPromptBtn').addEventListener('click', () => {
     window.history.pushState({}, '', '/join_room');
-    landing.style.display = 'none';
-    joinPrompt.style.display = 'block';
+    showPage(joinPrompt);
 });
+
 document.getElementById('joinPromptBackBtn').addEventListener('click', () => {
     document.getElementById('roomIdInput').value = '';
     showPage(landing);
     window.history.pushState({}, '', '/');
 });
-document.getElementById('joinPromptJoinBtn').addEventListener('click', async () => {
-    roomId = document.getElementById('roomIdInput').value.trim();
-    if (!roomId) return alert('Please enter a Room ID');
 
-    const ws = new WebSocket('ws://localhost:8080');
-    ws.onopen = () => {
-        ws.send(JSON.stringify({
-            type: 'validate-room',
-            roomId,
-            password: null
-        }));
-    };
-
-    ws.onmessage = async (event) => {
-        const data = JSON.parse(event.data);
-        if (data.type === 'room-validation') {
-            ws.close();
-            if (!data.exists) {
-                alert('Room does not exist');
-            } else if (!data.passwordRequired) {
-                window.history.pushState({}, '', `/room?room_id=${roomId}`);
-                showPage(roomDiv);
-                document.getElementById('roomIdDisplay').textContent = roomId;
-                await client.initialize();
-                client.connectWebSocket(roomId, getUserId());
-            } else {
-                showPage(passwordPrompt);
-            }
-        }
-    };
-
-    ws.onerror = (err) => {
-        console.error('WebSocket error:', err);
-        alert('Failed to validate room');
-    };
+document.getElementById('createPromptBtn').addEventListener('click', () => {
+    window.history.pushState({}, '', '/create_room');
+    showPage(createPrompt);
 });
+
 document.getElementById('inviteBtn').addEventListener('click', () => {
     const url = window.location.href;
     navigator.clipboard.writeText(url).then(() => alert('Room URL copied to clipboard!'));
 });
+
 document.getElementById('leaveRoomBtn').addEventListener('click', () => {
     window.history.pushState({}, '', '/');
-    client.disconnect();
+    //signalingClient.disconnect();
+    //webRTCClient.disconnect();
     showPage(landing);
 });
-document.getElementById('passwordPromptJoinBtn').addEventListener('click', async () => {
-    const password = document.getElementById('passwordPromptInput').value.trim();
 
-    const ws = new WebSocket('ws://localhost:8080');
-    ws.onopen = () => {
-        ws.send(JSON.stringify({
-            type: 'validate-room',
-            roomId,
-            password
-        }));
-    };
-
-    ws.onmessage = async (event) => {
-        const data = JSON.parse(event.data);
-        if (data.type === 'room-validation') {
-            ws.close();
-            if (data.exists && data.passwordRequired && data.passwordCorrect) {
-                window.history.pushState({}, '', `/room?room_id=${roomId}`);
-                showPage(roomDiv);
-                document.getElementById('roomIdDisplay').textContent = roomId;
-                await client.initialize();
-                client.connectWebSocket(roomId, getUserId());
-            } else {
-                alert('Incorrect password');
-            }
-        }
-    };
-
-    ws.onerror = (err) => {
-        console.error('WebSocket error:', err);
-        alert('Failed to validate password');
-    };
-});
 document.getElementById('passwordPromptBackBtn').addEventListener('click', () => {
     showPage(joinPrompt);
     document.getElementById('passwordPromptInput').value = '';
 });
+
 document.getElementById('copyRoomIdBtn').addEventListener('click', () => {
     const roomIdText = document.getElementById('roomIdDisplay').textContent;
     navigator.clipboard.writeText(roomIdText).then(() => alert('Room ID copied to clipboard!'));
