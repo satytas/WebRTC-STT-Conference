@@ -14,7 +14,7 @@ export class WebRTCClient {
         this.peerConnection = null;
 
         // Register handlers for WebRTC signaling messages
-        this.signalingClient.setHandler('new-user-ready', this.handleNewUser.bind(this));
+        this.signalingClient.setHandler('new-user', this.handleNewUser.bind(this));
         this.signalingClient.setHandler('offer', this.handleOffer.bind(this));
         this.signalingClient.setHandler('answer', this.handleAnswer.bind(this));
         this.signalingClient.setHandler('ice-candidate', this.handleIceCandidate.bind(this));

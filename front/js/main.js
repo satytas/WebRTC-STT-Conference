@@ -121,16 +121,17 @@ document.getElementById('createPromptJoinBtn').addEventListener('click', async (
     const password = document.getElementById('createPasswordInput').value.trim();
     try {
         const result = await signalingClient.createRoom(password);
-        if (result.success) {
-            roomId = result.roomId;
-            await webRTCClient.initialize();
-            await signalingClient.enterRoom(roomId);
-            window.history.pushState({}, '', `/room?room_id=${roomId}`);
-            showPage(roomDiv);
-            document.getElementById('roomIdDisplay').textContent = roomId;
-        } else {
-            alert('Room creation failed');
-        }
+
+        roomId = result.roomId;
+
+        await webRTCClient.initialize();
+        await signalingClient.enterRoom(roomId);
+
+        window.history.pushState({}, '', `/room?room_id=${roomId}`);
+        showPage(roomDiv);
+        
+        document.getElementById('roomIdDisplay').textContent = roomId;
+
     } catch (err) {
         console.error(err);
     }
