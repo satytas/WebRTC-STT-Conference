@@ -76,12 +76,23 @@ export class WebRTCClient {
     // Handle an incoming offer
     async handleOffer(data) {
         const { from, data: offer } = data;
+    
+        if (this.peerConnection.signalingState !== "stable") {
+            console.warn("Peer connection is not in a valid state to accept an offer:", this.peerConnection.signalingState);
+            return;
+        }
+    
         await this.peerConnection.setRemoteDescription(offer);
         const answer = await this.peerConnection.createAnswer();
-        await this.peerConnection.setLocalDescription(answer);
-        this.sendToUser(from, EventTypes.PEER_ANSWER, answer);
-        console.log(`(You ${this.userId}) Received offer from ${from}, sent answer`);
-    }
+    
+        if (this.peerConnection.signalingState === "have-remote-offer") {
+            await this.peerConnection.setLocalDescription(answer);
+            this.sendToUser(from, EventTypes.PEER_ANSWER, answer);
+            console.log(`(You ${this.userId}) Received offer from ${from}, sent answer`);
+        } else {
+            console.warn("Unexpected signaling state before setting local description:", this.peerConnection.signalingState);
+        }
+    }    
 
     // Handle an incoming answer
     async handleAnswer(data) {
