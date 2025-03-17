@@ -6,6 +6,7 @@ const rooms = new Map(); // Map<roomId, Map<ws, userId>>
 wss.on('connection', ws => {
     ws.on('message', message => {
         const data = JSON.parse(message);
+        
         switch (data.type) {
             case 'join-room': {
                 const { roomId, userId } = data;

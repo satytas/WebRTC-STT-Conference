@@ -28,7 +28,7 @@ export class WebRTCClient {
             this.localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
             document.getElementById('localVideo').srcObject = this.localStream;
             await this.createPeerConnection();
-            console.log("WebRTCClient initialized with local stream");
+            console.log(`(You ${this.userId}) WebRTCClient initialized with local stream`);
         } catch (err) {
             console.error("Failed to initialize media:", err);
         }
@@ -36,6 +36,7 @@ export class WebRTCClient {
 
     // Create a new peer connection
     async createPeerConnection() {
+        console.log(`Creating peer connection for user: ${this.userId}`);
         this.peerConnection = new RTCPeerConnection({ iceServers });
         this.remoteStream = new MediaStream();
         document.getElementById('remoteVideo').srcObject = this.remoteStream;
@@ -48,16 +49,16 @@ export class WebRTCClient {
             event.streams[0].getTracks().forEach(track => {
                 this.remoteStream.addTrack(track);
             });
-            console.log("Received remote track");
+            console.log(`(You ${this.userId}) Received remote track`);
         };
 
         this.peerConnection.onicecandidate = event => {
             if (event.candidate) {
                 this.sendToAllUsers('ice-candidate', event.candidate);
-                console.log("Sent ICE candidate", event.candidate);
+                console.log(`(You ${this.userId}) Sent ICE candidate`, event.candidate);
             }
         };
-        console.log("Peer connection created");
+        console.log(`(You ${this.userId}) created a peer connection`);
     }
 
     // Handle a new user joining
@@ -67,7 +68,7 @@ export class WebRTCClient {
         const offer = await this.peerConnection.createOffer();
         await this.peerConnection.setLocalDescription(offer);
         this.sendToUser(userId, 'offer', offer);
-        console.log(`Created and sent offer to user: ${userId}`);
+        console.log(`(You ${this.userId}) Created and sent offer to user: ${userId}`);
     }
 
     // Handle an incoming offer
@@ -77,21 +78,21 @@ export class WebRTCClient {
         const answer = await this.peerConnection.createAnswer();
         await this.peerConnection.setLocalDescription(answer);
         this.sendToUser(from, 'answer', answer);
-        console.log(`Received offer from ${from}, sent answer`);
+        console.log(`(You ${this.userId}) Received offer from ${from}, sent answer`);
     }
 
     // Handle an incoming answer
     async handleAnswer(data) {
         const { data: answer } = data;
         await this.peerConnection.setRemoteDescription(answer);
-        console.log("Received and set answer");
+        console.log(`(You ${this.userId}) Received and set answer`);
     }
 
     // Handle an incoming ICE candidate
     async handleIceCandidate(data) {
         const { data: candidate } = data;
         await this.peerConnection.addIceCandidate(candidate);
-        console.log("Added ICE candidate", candidate);
+        console.log(`(You ${this.userId}) Added ICE candidate`, candidate);
     }
 
     // Handle a user leaving
@@ -121,6 +122,17 @@ export class WebRTCClient {
             this.peerConnection.close();
             this.peerConnection = null;
         }
+
+        if(this.localStream){
+            this.localStream.getTracks().forEach(track => track.stop());
+            this.localStream = null;
+        }
+
+        if(this.remoteStream){
+            this.remoteStream.getTracks().forEach(track => track.stop());
+            this.remoteStream = null;
+        }
+
         this.users.clear();
         this.roomId = null;
         console.log("WebRTCClient disconnected");

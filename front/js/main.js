@@ -167,8 +167,8 @@ document.getElementById('inviteBtn').addEventListener('click', () => {
 
 document.getElementById('leaveRoomBtn').addEventListener('click', () => {
     window.history.pushState({}, '', '/');
-    //signalingClient.disconnect();
-    //webRTCClient.disconnect();
+    signalingClient.disconnect();
+    webRTCClient.disconnect();
     showPage(landing);
 });
 

@@ -1,25 +1,38 @@
 export class SignalingClient {
     constructor(userId) {
         this.userId = userId;
-        this.ws = new WebSocket("ws://localhost:8080");
         this.pendingRequests = {}; // Store promise resolvers for request-response
         this.handlers = {}; // Store handlers for event-based messages
+        
+        this.ws = null;
+    }
 
-        this.ws.onopen = () => console.log("WebSocket connected");
-        this.ws.onerror = (err) => console.error("WebSocket error:", err);
+    connect() {
+        return new Promise((resolve, reject) => {
+            console.log("connecting to ws://localhost:8080, rn ws is:", this.ws);
+            this.ws = new WebSocket("ws://localhost:8080");
+            console.log("connected to ws://localhost:8080, rn ws is:", this.ws);
 
-        this.ws.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            // Handle request-response messages
-            if (this.pendingRequests[data.type]) {
-                this.pendingRequests[data.type].resolve(data);
-                this.pendingRequests[data.type] = null;
-            }
-            // Handle event-based messages (e.g., WebRTC signaling)
-            else if (this.handlers[data.type]) {
-                this.handlers[data.type](data);
-            }
-        };
+            this.ws.onopen = () => {
+                console.log("WebSocket connected");
+                resolve();
+            };
+
+            this.ws.onerror = (err) => {
+                console.error("WebSocket error:", err);
+                reject(new Error("Failed to connect to WebSocket server"));
+            };
+
+            this.ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if (this.pendingRequests[data.type]) {
+                    this.pendingRequests[data.type].resolve(data);
+                    this.pendingRequests[data.type] = null;
+                } else if (this.handlers[data.type]) {
+                    this.handlers[data.type](data);
+                }
+            };
+        });
     }
 
     // Register handlers for WebRTC signaling messages
@@ -33,7 +46,11 @@ export class SignalingClient {
     }
 
     // Create a room
-    createRoom(password) {
+    async createRoom(password) {
+        console.log(this.ws);
+        if(this.ws === null) await this.connect();
+        console.log(this.ws);
+
         return new Promise((resolve, reject) => {
             if (this.pendingRequests['room-created']) {
                 reject(new Error("Another room creation is in progress"));
@@ -45,7 +62,9 @@ export class SignalingClient {
     }
 
     // Validate a room
-    validateRoom(roomId) {
+    async validateRoom(roomId) {
+        if(this.ws === null) await this.connect();
+
         return new Promise((resolve, reject) => {
             if (this.pendingRequests['room-validation']) {
                 reject(new Error("Another validation is in progress"));
@@ -69,12 +88,16 @@ export class SignalingClient {
     }
 
     // Enter a room
-    enterRoom(roomId) {
+    async enterRoom(roomId) {
+        if(this.ws === null) await this.connect();
+
         return new Promise((resolve, reject) => {
             if (this.pendingRequests['welcome']) {
                 reject(new Error("Already joining a room"));
+                console.log("Already joining a room");
                 return;
             }
+            console.log("sending join room, wating for welcome");
             this.pendingRequests['welcome'] = { resolve, reject };
             this.ws.send(JSON.stringify({ type: 'join-room', roomId, userId: this.userId }));
         });
@@ -82,5 +105,6 @@ export class SignalingClient {
 
     disconnect() {
         this.ws.close();
+        this.ws = null;
     }
 }
