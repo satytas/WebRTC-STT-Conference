@@ -1,3 +1,5 @@
+import { EventTypes } from './main.js';
+
 const iceServers = [
     { urls: "stun:stun.l.google.com:19302" },
     { urls: "stun:stun1.l.google.com:3478" }
@@ -14,11 +16,11 @@ export class WebRTCClient {
         this.peerConnection = null;
 
         // Register handlers for WebRTC signaling messages
-        this.signalingClient.setHandler('new-user', this.handleNewUser.bind(this));
-        this.signalingClient.setHandler('offer', this.handleOffer.bind(this));
-        this.signalingClient.setHandler('answer', this.handleAnswer.bind(this));
-        this.signalingClient.setHandler('ice-candidate', this.handleIceCandidate.bind(this));
-        this.signalingClient.setHandler('user-left', this.handleUserLeft.bind(this));
+        this.signalingClient.setHandler(EventTypes.SERVER_NEW_USER, this.handleNewUser.bind(this));
+        this.signalingClient.setHandler(EventTypes.PEER_OFFER, this.handleOffer.bind(this));
+        this.signalingClient.setHandler(EventTypes.PEER_ANSWER, this.handleAnswer.bind(this));
+        this.signalingClient.setHandler(EventTypes.PEER_ICE_CANDIDATE, this.handleIceCandidate.bind(this));
+        this.signalingClient.setHandler(EventTypes.PEER_USER_LEFT, this.handleUserLeft.bind(this));
         console.log(`WebRTCClient initialized for user: ${this.userId}`);
     }
 
@@ -54,7 +56,7 @@ export class WebRTCClient {
 
         this.peerConnection.onicecandidate = event => {
             if (event.candidate) {
-                this.sendToAllUsers('ice-candidate', event.candidate);
+                this.sendToAllUsers(EventTypes.PEER_ICE_CANDIDATE, event.candidate);
                 console.log(`(You ${this.userId}) Sent ICE candidate`, event.candidate);
             }
         };
@@ -67,7 +69,7 @@ export class WebRTCClient {
         this.users.add(userId);
         const offer = await this.peerConnection.createOffer();
         await this.peerConnection.setLocalDescription(offer);
-        this.sendToUser(userId, 'offer', offer);
+        this.sendToUser(userId, EventTypes.PEER_OFFER, offer);
         console.log(`(You ${this.userId}) Created and sent offer to user: ${userId}`);
     }
 
@@ -77,7 +79,7 @@ export class WebRTCClient {
         await this.peerConnection.setRemoteDescription(offer);
         const answer = await this.peerConnection.createAnswer();
         await this.peerConnection.setLocalDescription(answer);
-        this.sendToUser(from, 'answer', answer);
+        this.sendToUser(from, EventTypes.PEER_ANSWER, answer);
         console.log(`(You ${this.userId}) Received offer from ${from}, sent answer`);
     }
 

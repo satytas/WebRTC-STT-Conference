@@ -1,3 +1,5 @@
+import { EventTypes } from './main.js';
+
 export class SignalingClient {
     constructor(userId) {
         this.userId = userId;
@@ -52,12 +54,12 @@ export class SignalingClient {
         console.log(this.ws);
 
         return new Promise((resolve, reject) => {
-            if (this.pendingRequests['room-created']) {
+            if (this.pendingRequests[EventTypes.SERVER_ROOM_CREATED]) {
                 reject(new Error("Another room creation is in progress"));
                 return;
             }
-            this.pendingRequests['room-created'] = { resolve, reject };
-            this.ws.send(JSON.stringify({ type: 'create-room', password: password || null }));
+            this.pendingRequests[EventTypes.SERVER_ROOM_CREATED] = { resolve, reject };
+            this.ws.send(JSON.stringify({ type: EventTypes.CLIENT_CREATE_ROOM, password: password || null }));
         });
     }
 
@@ -66,24 +68,24 @@ export class SignalingClient {
         if(this.ws === null) await this.connect();
 
         return new Promise((resolve, reject) => {
-            if (this.pendingRequests['room-validation']) {
+            if (this.pendingRequests[EventTypes.SERVER_ROOM_VALIDATION]) {
                 reject(new Error("Another validation is in progress"));
                 return;
             }
-            this.pendingRequests['room-validation'] = { resolve, reject };
-            this.ws.send(JSON.stringify({ type: 'validate-room', roomId }));
+            this.pendingRequests[EventTypes.SERVER_ROOM_VALIDATION] = { resolve, reject };
+            this.ws.send(JSON.stringify({ type: EventTypes.CLIENT_VALIDATE_ROOM, roomId }));
         });
     }
 
     // Validate a password
     validatePassword(roomId, password) {
         return new Promise((resolve, reject) => {
-            if (this.pendingRequests['password-validation']) {
+            if (this.pendingRequests[EventTypes.SERVER_PASSWORD_VALIDATION]) {
                 reject(new Error("Another password validation is in progress"));
                 return;
             }
-            this.pendingRequests['password-validation'] = { resolve, reject };
-            this.ws.send(JSON.stringify({ type: 'validate-password', roomId, password }));
+            this.pendingRequests[EventTypes.SERVER_PASSWORD_VALIDATION] = { resolve, reject };
+            this.ws.send(JSON.stringify({ type: EventTypes.CLIENT_VALIDATE_PASSWORD, roomId, password }));
         });
     }
 
@@ -92,14 +94,14 @@ export class SignalingClient {
         if(this.ws === null) await this.connect();
 
         return new Promise((resolve, reject) => {
-            if (this.pendingRequests['welcome']) {
+            if (this.pendingRequests[EventTypes.SERVER_WELCOME]) {
                 reject(new Error("Already joining a room"));
                 console.log("Already joining a room");
                 return;
             }
             console.log("sending join room, wating for welcome");
-            this.pendingRequests['welcome'] = { resolve, reject };
-            this.ws.send(JSON.stringify({ type: 'join-room', roomId, userId: this.userId }));
+            this.pendingRequests[EventTypes.SERVER_WELCOME] = { resolve, reject };
+            this.ws.send(JSON.stringify({ type: EventTypes.CLIENT_JOIN_ROOM, roomId, userId: this.userId }));
         });
     }
 

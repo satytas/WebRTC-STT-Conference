@@ -1,4 +1,24 @@
 const WebSocket = require('ws');
+const EventTypes = Object.freeze({
+    // Client to Server events
+    CLIENT_JOIN_ROOM: "client:join-room",
+    CLIENT_CREATE_ROOM: "client:create-room",
+    CLIENT_VALIDATE_ROOM: "client:validate-room",
+    CLIENT_VALIDATE_PASSWORD: "client:validate-password",
+
+    // Server to Client events
+    SERVER_WELCOME: "server:welcome",
+    SERVER_ROOM_CREATED: "server:room-created",
+    SERVER_ROOM_VALIDATION: "server:room-validation",
+    SERVER_PASSWORD_VALIDATION: "server:password-validation",
+    SERVER_NEW_USER: "server:new-user",
+
+    PEER_OFFER: "peer:offer",
+    PEER_ANSWER: "peer:answer",
+    PEER_ICE_CANDIDATE: "peer:ice-candidate",
+    PEER_USER_LEFT: "peer:user-left"
+});
+
 const wss = new WebSocket.Server({ port: 8080 });
 
 const rooms = new Map(); // Map<roomId, Map<ws, userId>>
@@ -8,21 +28,21 @@ wss.on('connection', ws => {
         const data = JSON.parse(message);
         
         switch (data.type) {
-            case 'join-room': {
+            case EventTypes.CLIENT_JOIN_ROOM: {
                 const { roomId, userId } = data;
                 const room = rooms.get(roomId) || rooms.set(roomId, new Map()).get(roomId);
             
                 room.set(ws, userId);
-                ws.send(JSON.stringify({ type: 'welcome', userId, roomId }));
+                ws.send(JSON.stringify({ type: EventTypes.SERVER_WELCOME, userId, roomId }));
                 console.log(`User ${userId} joined room ${roomId}`);
             
                 for (const [client] of room)
                     if (client !== ws && client.readyState === WebSocket.OPEN) 
-                        client.send(JSON.stringify({ type: 'new-user', userId }));
+                        client.send(JSON.stringify({ type: EventTypes.SERVER_NEW_USER, userId }));
             
             } break;
         
-            case 'create-room': {
+            case EventTypes.CLIENT_CREATE_ROOM: {
                 const roomId = Math.random().toString(36).slice(2, 10);
                 const room = new Map();
 
@@ -30,25 +50,25 @@ wss.on('connection', ws => {
                 rooms.set(roomId, room);
 
                 ws.send(JSON.stringify({
-                    type: 'room-created',
+                    type: EventTypes.SERVER_ROOM_CREATED,
                     roomId: roomId
                 }));
             } break;
 
-            case 'validate-room': {
+            case EventTypes.CLIENT_VALIDATE_ROOM: {
                 const room = rooms.get(data.roomId);
             
                 ws.send(JSON.stringify({
-                    type: 'room-validation',
+                    type: EventTypes.SERVER_ROOM_VALIDATION,
                     exists: !!room,
                     passwordRequired: room ? room.password !== null : false,
                     passwordCorrect: room ? data.password === room.password : false
                 }));
             } break;
             
-            case 'validate-password': {
+            case EventTypes.CLIENT_VALIDATE_PASSWORD: {
                 ws.send(JSON.stringify({
-                    type: 'password-validation',
+                    type: EventTypes.SERVER_PASSWORD_VALIDATION,
                     success: rooms.get(data.roomId).password === data.password
                 }));
             } break;
