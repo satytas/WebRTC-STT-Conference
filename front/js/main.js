@@ -30,18 +30,15 @@ const createPrompt = document.getElementById('createPrompt');
 const passwordPrompt = document.getElementById('passwordPrompt');
 
 let roomId = new URLSearchParams(window.location.search).get('room_id');
+const userId = sessionStorage.getItem("userId") || 
+               (sessionStorage.setItem("userId", Math.random().toString(36).slice(2, 6)), 
+                sessionStorage.getItem("userId"));
 
-function getUserId() {
-    let userId = sessionStorage.getItem('userId');
-    if (!userId) {
-        userId = Math.random().toString(36).slice(2, 6);
-        sessionStorage.setItem('userId', userId);
-    }
-    return userId;
-}
-
-const signalingClient = new SignalingClient(getUserId());
+const signalingClient = new SignalingClient(userId);
 const webRTCClient = new WebRTCClient(signalingClient);
+
+window.addEventListener('load', () => handleRouting());
+window.addEventListener('popstate', () => handleRouting());
 
 // Routing
 async function handleRouting() {
@@ -75,11 +72,6 @@ async function handleRouting() {
             break;
     }
 }
-
-window.addEventListener('load', () => handleRouting());
-window.addEventListener('popstate', () => handleRouting());
-
-// UI
 function showPage(page) {
     landing.style.display = 'none';
     joinPrompt.style.display = 'none';
@@ -113,7 +105,6 @@ document.getElementById('joinPromptJoinBtn').addEventListener('click', async () 
         console.error(err);
     }
 });
-
 document.getElementById('passwordPromptJoinBtn').addEventListener('click', async () => {
     const password = document.getElementById('passwordPromptInput').value.trim();
     try {
@@ -137,7 +128,6 @@ document.getElementById('passwordPromptJoinBtn').addEventListener('click', async
         console.error(err);
     }
 });
-
 document.getElementById('createPromptJoinBtn').addEventListener('click', async () => {
     const password = document.getElementById('createPasswordInput').value.trim();
     try {
@@ -158,46 +148,40 @@ document.getElementById('createPromptJoinBtn').addEventListener('click', async (
     }
 });
 
-// Other event listeners (back buttons, invite, leave, etc.) remain similar, just update calls
+// Other event listeners
 document.getElementById('createPromptBackBtn').addEventListener('click', () => {
     window.history.pushState({}, '', '/');
     document.getElementById('createPasswordInput').value = '';
     showPage(landing);
 });
-
 document.getElementById('joinPromptBtn').addEventListener('click', () => {
     window.history.pushState({}, '', '/join_room');
     showPage(joinPrompt);
 });
-
 document.getElementById('joinPromptBackBtn').addEventListener('click', () => {
     document.getElementById('roomIdInput').value = '';
     showPage(landing);
     window.history.pushState({}, '', '/');
 });
-
 document.getElementById('createPromptBtn').addEventListener('click', () => {
     window.history.pushState({}, '', '/create_room');
     showPage(createPrompt);
 });
-
 document.getElementById('inviteBtn').addEventListener('click', () => {
     const url = window.location.href;
     navigator.clipboard.writeText(url).then(() => alert('Room URL copied to clipboard!'));
 });
-
 document.getElementById('leaveRoomBtn').addEventListener('click', () => {
     window.history.pushState({}, '', '/');
-    signalingClient.disconnect();
     webRTCClient.disconnect();
+    setTimeout(() => signalingClient.disconnect(), 100);
+    signalingClient.disconnect();
     showPage(landing);
 });
-
 document.getElementById('passwordPromptBackBtn').addEventListener('click', () => {
     showPage(joinPrompt);
     document.getElementById('passwordPromptInput').value = '';
 });
-
 document.getElementById('copyRoomIdBtn').addEventListener('click', () => {
     const roomIdText = document.getElementById('roomIdDisplay').textContent;
     navigator.clipboard.writeText(roomIdText).then(() => alert('Room ID copied to clipboard!'));

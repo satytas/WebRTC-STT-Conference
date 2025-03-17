@@ -15,31 +15,29 @@ export class WebRTCClient {
         this.remoteStream = null;
         this.peerConnection = null;
 
-        // Register handlers for WebRTC signaling messages
         this.signalingClient.setHandler(EventTypes.SERVER_NEW_USER, this.handleNewUser.bind(this));
         this.signalingClient.setHandler(EventTypes.PEER_OFFER, this.handleOffer.bind(this));
         this.signalingClient.setHandler(EventTypes.PEER_ANSWER, this.handleAnswer.bind(this));
         this.signalingClient.setHandler(EventTypes.PEER_ICE_CANDIDATE, this.handleIceCandidate.bind(this));
         this.signalingClient.setHandler(EventTypes.PEER_USER_LEFT, this.handleUserLeft.bind(this));
-        console.log(`WebRTCClient initialized for user: ${this.userId}`);
+        
+        console.log(`U- ${this.userId}'s WebRTCClient`);
     }
 
-    // Initialize media and peer connection
     async initialize() {
         try {
             this.localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
             document.getElementById('localVideo').srcObject = this.localStream;
             await this.createPeerConnection();
-            console.log(`(You ${this.userId}) WebRTCClient initialized with local stream`);
+            console.log(`U- ${this.userId}'s WebRTCClient initialized with local stream`);
         } catch (err) {
             console.error("Failed to initialize media:", err);
         }
     }
 
-    // Create a new peer connection
     async createPeerConnection() {
-        console.log(`Creating peer connection for user: ${this.userId}`);
         this.peerConnection = new RTCPeerConnection({ iceServers });
+
         this.remoteStream = new MediaStream();
         document.getElementById('remoteVideo').srcObject = this.remoteStream;
 
@@ -51,29 +49,30 @@ export class WebRTCClient {
             event.streams[0].getTracks().forEach(track => {
                 this.remoteStream.addTrack(track);
             });
-            console.log(`(You ${this.userId}) Received remote track`);
+            console.log(`U- ${this.userId} Received remote track`);
         };
 
         this.peerConnection.onicecandidate = event => {
             if (event.candidate) {
                 this.sendToAllUsers(EventTypes.PEER_ICE_CANDIDATE, event.candidate);
-                console.log(`(You ${this.userId}) Sent ICE candidate`, event.candidate);
+                console.log(`U- ${this.userId} Sent ICE candidate`, event.candidate);
             }
         };
-        console.log(`(You ${this.userId}) created a peer connection`);
+
+        console.log(`U- ${this.userId} Created a Peer Connection`);
     }
 
-    // Handle a new user joining
     async handleNewUser(data) {
         const { userId } = data;
         this.users.add(userId);
+
         const offer = await this.peerConnection.createOffer();
         await this.peerConnection.setLocalDescription(offer);
+
         this.sendToUser(userId, EventTypes.PEER_OFFER, offer);
-        console.log(`(You ${this.userId}) Created and sent offer to user: ${userId}`);
+        console.log(`U- ${this.userId} Created and Sent Offer to- ${userId}`);
     }
 
-    // Handle an incoming offer
     async handleOffer(data) {
         const { from, data: offer } = data;
     
@@ -83,54 +82,57 @@ export class WebRTCClient {
         }
     
         await this.peerConnection.setRemoteDescription(offer);
+        console.log(`U- ${this.userId} Received Offer from- ${from}`);
+
         const answer = await this.peerConnection.createAnswer();
-    
+
         if (this.peerConnection.signalingState === "have-remote-offer") {
             await this.peerConnection.setLocalDescription(answer);
+
             this.sendToUser(from, EventTypes.PEER_ANSWER, answer);
-            console.log(`(You ${this.userId}) Received offer from ${from}, sent answer`);
+            console.log(`U- ${this.userId} Sent back an Answer to- ${from}`);
         } else {
             console.warn("Unexpected signaling state before setting local description:", this.peerConnection.signalingState);
         }
     }    
 
-    // Handle an incoming answer
     async handleAnswer(data) {
         const { data: answer } = data;
         await this.peerConnection.setRemoteDescription(answer);
-        console.log(`(You ${this.userId}) Received and set answer`);
+
+        console.log(`U- ${this.userId} Received and Set Answer`);
     }
 
-    // Handle an incoming ICE candidate
     async handleIceCandidate(data) {
         const { data: candidate } = data;
+
         await this.peerConnection.addIceCandidate(candidate);
-        console.log(`(You ${this.userId}) Added ICE candidate`, candidate);
+        console.log(`U- ${this.userId} Added ICE candidate`, candidate);
     }
 
-    // Handle a user leaving
     handleUserLeft(data) {
         this.users.delete(data.userId);
+        console.log(`IS THIS THINGON? sdg;oijsdhfgposidh poihdpg[oi]`);
         if (this.peerConnection) {
             this.peerConnection.close();
             this.peerConnection = null;
-            document.getElementById('remoteVideo').srcObject = null;
-            console.log(`User ${data.userId} left, closed peer connection`);
         }
+
+        document.getElementById('remoteVideo').srcObject = null;
+        console.log(`${data.userId} left, closed peer connection`);
     }
 
-    // Send a message to a specific user
     sendToUser(target, type, data) {
         this.signalingClient.sendToUser(target, type, data);
     }
 
-    // Send a message to all users
     sendToAllUsers(type, data) {
         this.users.forEach(memberId => this.sendToUser(memberId, type, data));
     }
 
-    // Clean up WebRTC resources
     disconnect() {
+        this.sendToAllUsers(EventTypes.PEER_USER_LEFT, { userId: this.userId }); // Moved to top
+
         if (this.peerConnection) {
             this.peerConnection.close();
             this.peerConnection = null;
@@ -148,6 +150,7 @@ export class WebRTCClient {
 
         this.users.clear();
         this.roomId = null;
+
         console.log("WebRTCClient disconnected");
     }
 }

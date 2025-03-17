@@ -28,6 +28,7 @@ wss.on('connection', ws => {
         const data = JSON.parse(message);
         
         switch (data.type) {
+            //client to server
             case EventTypes.CLIENT_JOIN_ROOM: {
                 const { roomId, userId } = data;
                 const room = rooms.get(roomId) || rooms.set(roomId, new Map()).get(roomId);
@@ -73,6 +74,7 @@ wss.on('connection', ws => {
                 }));
             } break;
 
+            //client to client
             default: {
                 for (const [roomId, users] of rooms) {
                     if (users.has(ws)) {
