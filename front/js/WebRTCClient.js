@@ -110,16 +110,14 @@ export class WebRTCClient {
         console.log(`U- ${this.userId} Added ICE candidate`, candidate);
     }
 
-    handleUserLeft(data) {
+    async handleUserLeft(data) {
         this.users.delete(data.userId);
-        console.log(`IS THIS THINGON? sdg;oijsdhfgposidh poihdpg[oi]`);
-        if (this.peerConnection) {
-            this.peerConnection.close();
-            this.peerConnection = null;
-        }
-
         document.getElementById('remoteVideo').srcObject = null;
+        this.peerConnection.close();
         console.log(`${data.userId} left, closed peer connection`);
+
+        console.log("Recreating peer connection");
+        await this.createPeerConnection();
     }
 
     sendToUser(target, type, data) {
@@ -131,26 +129,22 @@ export class WebRTCClient {
     }
 
     disconnect() {
-        this.sendToAllUsers(EventTypes.PEER_USER_LEFT, { userId: this.userId }); // Moved to top
-
         if (this.peerConnection) {
             this.peerConnection.close();
             this.peerConnection = null;
         }
-
+    
         if(this.localStream){
             this.localStream.getTracks().forEach(track => track.stop());
             this.localStream = null;
         }
-
+    
         if(this.remoteStream){
             this.remoteStream.getTracks().forEach(track => track.stop());
             this.remoteStream = null;
         }
-
+    
         this.users.clear();
         this.roomId = null;
-
-        console.log("WebRTCClient disconnected");
     }
 }

@@ -22,13 +22,18 @@ export class SignalingClient {
 
             this.ws.onmessage = (event) => {
                 const data = JSON.parse(event.data);
-
+                console.log("Received WebSocket message:", data.type);
+            
                 if (this.pendingRequests[data.type]) {
                     this.pendingRequests[data.type].resolve(data);
                     this.pendingRequests[data.type] = null;
                 }
-                else if (this.handlers[data.type])
+                else if (this.handlers[data.type]) {
+                    console.log("Calling handler for:", data.type);
                     this.handlers[data.type](data);
+                } else {
+                    console.log("No handler for event type:", data.type);
+                }
             };
         });
     }
@@ -81,22 +86,24 @@ export class SignalingClient {
 
     async enterRoom(roomId) {
         if(this.ws === null) await this.connect();
-
+    
         return new Promise((resolve, reject) => {
             if (this.pendingRequests[EventTypes.SERVER_WELCOME]) {
                 reject(new Error("Already joining a room"));
-                console.log("Already joining a room");
                 return;
             }
-
-            console.log("sending join room, wating for welcome");
+    
+            this.roomId = roomId;
+            
             this.pendingRequests[EventTypes.SERVER_WELCOME] = { resolve, reject };
             this.ws.send(JSON.stringify({ type: EventTypes.CLIENT_JOIN_ROOM, roomId, userId: this.userId }));
         });
     }
 
     disconnect() {
-        this.ws.close();
+        if (this.ws && this.ws.readyState === WebSocket.OPEN)
+            this.ws.close();
+        
         this.ws = null;
     }
 }

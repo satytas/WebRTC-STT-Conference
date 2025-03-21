@@ -5,6 +5,7 @@ const EventTypes = Object.freeze({
     CLIENT_CREATE_ROOM: "client:create-room",
     CLIENT_VALIDATE_ROOM: "client:validate-room",
     CLIENT_VALIDATE_PASSWORD: "client:validate-password",
+    CLIENT_DISCONNECT: "client:disconnect",
 
     // Server to Client events
     SERVER_WELCOME: "server:welcome",
@@ -92,8 +93,29 @@ wss.on('connection', ws => {
     ws.on('close', () => {
         for (const [roomId, users] of rooms) {
             if (users.has(ws)) {
+                const userId = users.get(ws);
                 users.delete(ws);
-                if (users.size === 0) rooms.delete(roomId);
+                
+                console.log(`User ${userId} disconnected from room ${roomId} (WebSocket closed)`);
+                
+                // Notify other users in the room
+                if (users.size > 0) {
+                    for (const [client, id] of users) {
+                        if (client.readyState === WebSocket.OPEN) {
+                            client.send(JSON.stringify({ 
+                                type: EventTypes.PEER_USER_LEFT, 
+                                userId: userId 
+                            }));
+                        }
+                    }
+                }
+                
+                // Clean up empty rooms
+                if (users.size === 0) {
+                    rooms.delete(roomId);
+                    console.log(`Room ${roomId} deleted because it's empty`);
+                }
+                
                 break;
             }
         }

@@ -7,6 +7,7 @@ const EventTypes = Object.freeze({
     CLIENT_CREATE_ROOM: "client:create-room",
     CLIENT_VALIDATE_ROOM: "client:validate-room",
     CLIENT_VALIDATE_PASSWORD: "client:validate-password",
+    CLIENT_DISCONNECT: "client:disconnect",
 
     // Server to Client events
     SERVER_WELCOME: "server:welcome",
@@ -172,10 +173,9 @@ document.getElementById('inviteBtn').addEventListener('click', () => {
     navigator.clipboard.writeText(url).then(() => alert('Room URL copied to clipboard!'));
 });
 document.getElementById('leaveRoomBtn').addEventListener('click', () => {
-    window.history.pushState({}, '', '/');
     webRTCClient.disconnect();
-    setTimeout(() => signalingClient.disconnect(), 100);
     signalingClient.disconnect();
+    window.history.pushState({}, '', '/');
     showPage(landing);
 });
 document.getElementById('passwordPromptBackBtn').addEventListener('click', () => {
