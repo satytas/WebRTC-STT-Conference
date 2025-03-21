@@ -16,6 +16,8 @@
   --text-muted: #94a3b8;
   --danger: #ef4444;
   --danger-hover: #dc2626;
+  --success: #10b981;
+  --warning: #f59e0b;
   --border-radius: 12px;
   --transition: all 0.2s ease-in-out;
 }
@@ -222,6 +224,41 @@ input:focus {
   font-weight: 500;
 }
 
+/* Status indicators */
+.video-status {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  gap: 8px;
+}
+
+.status-indicator {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+}
+
+.status-indicator svg {
+  width: 16px;
+  height: 16px;
+}
+
+.status-indicator.muted:after,
+.status-indicator.video-off:after {
+  content: '/';
+  position: absolute;
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--danger);
+  transform: rotate(-20deg);
+}
+
 /* Controls */
 .room-controls {
   display: flex;
@@ -250,6 +287,14 @@ input:focus {
 }
 
 .control-button.danger:hover {
+  background-color: var(--danger-hover);
+}
+
+.control-button.active {
+  background-color: var(--danger);
+}
+
+.control-button.active:hover {
   background-color: var(--danger-hover);
 }
 

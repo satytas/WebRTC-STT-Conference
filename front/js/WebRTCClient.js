@@ -14,6 +14,11 @@ export class WebRTCClient {
         this.localStream = null;
         this.remoteStream = null;
         this.peerConnection = null;
+        this.remoteUserId = null;
+        
+        // Track media states
+        this.isAudioMuted = false;
+        this.isVideoOff = false;
 
         this.signalingClient.setHandler(EventTypes.SERVER_NEW_USER, this.handleNewUser.bind(this));
         this.signalingClient.setHandler(EventTypes.PEER_OFFER, this.handleOffer.bind(this));
@@ -26,8 +31,15 @@ export class WebRTCClient {
 
     async initialize() {
         try {
-            this.localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+            this.localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
             document.getElementById('localVideo').srcObject = this.localStream;
+            
+            // Display local user ID
+            document.getElementById('localUserId').textContent = this.userId;
+            
+            // Initialize media status indicators
+            this.updateStatusIndicators();
+            
             await this.createPeerConnection();
             console.log(`U- ${this.userId}'s WebRTCClient initialized with local stream`);
         } catch (err) {
@@ -65,6 +77,13 @@ export class WebRTCClient {
     async handleNewUser(data) {
         const { userId } = data;
         this.users.add(userId);
+        this.remoteUserId = userId;
+        
+        // Update remote user ID display
+        document.getElementById('remoteUserId').textContent = userId;
+        
+        // Update participant count
+        document.getElementById('participantCount').textContent = `${this.users.size + 1}/2`;
 
         const offer = await this.peerConnection.createOffer();
         await this.peerConnection.setLocalDescription(offer);
@@ -75,6 +94,13 @@ export class WebRTCClient {
 
     async handleOffer(data) {
         const { from, data: offer } = data;
+        
+        // Set remote user ID
+        this.remoteUserId = from;
+        document.getElementById('remoteUserId').textContent = from;
+        
+        // Update participant count
+        document.getElementById('participantCount').textContent = `${this.users.size + 1}/2`;
     
         if (this.peerConnection.signalingState !== "stable") {
             console.warn("Peer connection is not in a valid state to accept an offer:", this.peerConnection.signalingState);
@@ -112,7 +138,11 @@ export class WebRTCClient {
 
     async handleUserLeft(data) {
         this.users.delete(data.userId);
+        this.remoteUserId = null;
         document.getElementById('remoteVideo').srcObject = null;
+        document.getElementById('remoteUserId').textContent = "waiting...";
+        document.getElementById('participantCount').textContent = `1/2`;
+        
         this.peerConnection.close();
         console.log(`${data.userId} left, closed peer connection`);
 
@@ -126,6 +156,68 @@ export class WebRTCClient {
 
     sendToAllUsers(type, data) {
         this.users.forEach(memberId => this.sendToUser(memberId, type, data));
+    }
+
+    toggleMute = () => {
+        const audioTrack = this.localStream.getAudioTracks()[0];
+        if (audioTrack) {
+            audioTrack.enabled = !audioTrack.enabled;
+            this.isAudioMuted = !audioTrack.enabled;
+            
+            // Update UI
+            const muteBtn = document.getElementById('muteBtn');
+            const muteText = document.getElementById('muteButtonText');
+            
+            if (this.isAudioMuted) {
+                muteBtn.classList.add('active');
+                muteText.textContent = "Unmute";
+            } else {
+                muteBtn.classList.remove('active');
+                muteText.textContent = "Mute";
+            }
+            
+            this.updateStatusIndicators();
+        }
+    }
+    
+    toggleVideo = () => {
+        const videoTrack = this.localStream.getVideoTracks()[0];
+        if (videoTrack) {
+            videoTrack.enabled = !videoTrack.enabled;
+            this.isVideoOff = !videoTrack.enabled;
+            
+            // Update UI
+            const videoBtn = document.getElementById('videoBtn');
+            const videoText = document.getElementById('videoButtonText');
+            
+            if (this.isVideoOff) {
+                videoBtn.classList.add('active');
+                videoText.textContent = "Video On";
+            } else {
+                videoBtn.classList.remove('active');
+                videoText.textContent = "Video Off";
+            }
+            
+            this.updateStatusIndicators();
+        }
+    };
+
+    updateStatusIndicators() {
+        // Local audio status
+        const localAudioStatus = document.getElementById('localAudioStatus');
+        if (this.isAudioMuted) {
+            localAudioStatus.classList.add('muted');
+        } else {
+            localAudioStatus.classList.remove('muted');
+        }
+        
+        // Local video status
+        const localVideoStatus = document.getElementById('localVideoStatus');
+        if (this.isVideoOff) {
+            localVideoStatus.classList.add('video-off');
+        } else {
+            localVideoStatus.classList.remove('video-off');
+        }
     }
 
     disconnect() {
@@ -146,5 +238,6 @@ export class WebRTCClient {
     
         this.users.clear();
         this.roomId = null;
+        this.remoteUserId = null;
     }
 }

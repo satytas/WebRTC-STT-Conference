@@ -39,11 +39,19 @@
         <div id="videos">
             <div class="video-container">
                 <video class="video-player" id="localVideo" autoplay playsinline></video>
-                <div class="video-label">You</div>
+                <div class="video-label">You (<span id="localUserId"></span>)</div>
+                <div class="video-status local-status">
+                    <span id="localAudioStatus" class="status-indicator"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg></span>
+                    <span id="localVideoStatus" class="status-indicator"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg></span>
+                </div>
             </div>
             <div class="video-container">
                 <video class="video-player" id="remoteVideo" autoplay playsinline></video>
-                <div class="video-label">Participant</div>
+                <div class="video-label">Participant (<span id="remoteUserId">waiting...</span>)</div>
+                <div class="video-status remote-status">
+                    <span id="remoteAudioStatus" class="status-indicator"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg></span>
+                    <span id="remoteVideoStatus" class="status-indicator"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg></span>
+                </div>
             </div>
         </div>
         
@@ -55,14 +63,14 @@
                     <line x1="12" y1="19" x2="12" y2="23"></line>
                     <line x1="8" y1="23" x2="16" y2="23"></line>
                 </svg>
-                <span>Mute</span>
+                <span id="muteButtonText">Mute</span>
             </button>
             <button id="videoBtn" class="control-button">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polygon points="23 7 16 12 23 17 23 7"></polygon>
                     <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
                 </svg>
-                <span>Video Off</span>
+                <span id="videoButtonText">Video Off</span>
             </button>
             <button id="inviteBtn" class="control-button">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

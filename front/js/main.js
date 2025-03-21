@@ -30,16 +30,16 @@ const joinPrompt = document.getElementById('joinPrompt');
 const createPrompt = document.getElementById('createPrompt');
 const passwordPrompt = document.getElementById('passwordPrompt');
 
+
 let roomId = new URLSearchParams(window.location.search).get('room_id');
-const userId = sessionStorage.getItem("userId") || 
-               (sessionStorage.setItem("userId", Math.random().toString(36).slice(2, 6)), 
-                sessionStorage.getItem("userId"));
+const userId = sessionStorage.getItem("userId") || (sessionStorage.setItem("userId", Math.random().toString(36).slice(2, 6)), sessionStorage.getItem("userId"));
 
 const signalingClient = new SignalingClient(userId);
 const webRTCClient = new WebRTCClient(signalingClient);
 
 window.addEventListener('load', () => handleRouting());
 window.addEventListener('popstate', () => handleRouting());
+
 
 // Routing
 async function handleRouting() {
@@ -186,5 +186,7 @@ document.getElementById('copyRoomIdBtn').addEventListener('click', () => {
     const roomIdText = document.getElementById('roomIdDisplay').textContent;
     navigator.clipboard.writeText(roomIdText).then(() => alert('Room ID copied to clipboard!'));
 });
+document.getElementById('muteBtn').addEventListener('click', () => webRTCClient.toggleMute());
+document.getElementById('videoBtn').addEventListener('click', () => webRTCClient.toggleVideo());
 
 export { EventTypes };
