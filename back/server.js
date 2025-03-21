@@ -98,7 +98,6 @@ wss.on('connection', ws => {
                 
                 console.log(`User ${userId} disconnected from room ${roomId} (WebSocket closed)`);
                 
-                // Notify other users in the room
                 if (users.size > 0) {
                     for (const [client, id] of users) {
                         if (client.readyState === WebSocket.OPEN) {
@@ -110,7 +109,6 @@ wss.on('connection', ws => {
                     }
                 }
                 
-                // Clean up empty rooms
                 if (users.size === 0) {
                     rooms.delete(roomId);
                     console.log(`Room ${roomId} deleted because it's empty`);

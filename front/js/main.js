@@ -170,7 +170,15 @@ document.getElementById('createPromptBtn').addEventListener('click', () => {
 });
 document.getElementById('inviteBtn').addEventListener('click', () => {
     const url = window.location.href;
-    navigator.clipboard.writeText(url).then(() => alert('Room URL copied to clipboard!'));
+    const choice = confirm('Would you like to send via email instead?');
+    
+    if (choice) {
+        const subject = encodeURIComponent('Join pls!');
+        const body = encodeURIComponent(`Hey! ermm actually would u consider to join me?! <3: ${url}`);
+        window.location.href = `mailto:?subject=${subject}&body=${body}`;
+    }
+    else
+        navigator.clipboard.writeText(url).then(() => alert('Room URL copied to clipboard!'));
 });
 document.getElementById('leaveRoomBtn').addEventListener('click', () => {
     webRTCClient.disconnect();
