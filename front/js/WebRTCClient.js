@@ -17,8 +17,8 @@ export class WebRTCClient {
         this.remoteUserId = null;
         
         // Track media states
-        this.isAudioMuted = false;
-        this.isVideoOff = false;
+        this.isAudioMuted = true;
+        this.isVideoOff = true;
 
         this.signalingClient.setHandler(EventTypes.SERVER_NEW_USER, this.handleNewUser.bind(this));
         this.signalingClient.setHandler(EventTypes.PEER_OFFER, this.handleOffer.bind(this));
@@ -32,6 +32,9 @@ export class WebRTCClient {
     async initialize() {
         try {
             this.localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            this.toggleMute();
+            this.toggleVideo();
+            
             document.getElementById('localVideo').srcObject = this.localStream;
             
             // Display local user ID
