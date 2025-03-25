@@ -33,10 +33,15 @@ wss.on('connection', ws => {
             case EventTypes.CLIENT_JOIN_ROOM: {
                 const { roomId, userId } = data;
                 const room = rooms.get(roomId) || rooms.set(roomId, new Map()).get(roomId);
-            
+
                 room.set(ws, userId);
                 ws.send(JSON.stringify({ type: EventTypes.SERVER_WELCOME, userId, roomId }));
                 console.log(`User ${userId} joined room ${roomId}`);
+                console.log(`Room ${roomId} has ${room.size} users`);
+                console.log('this are the users inside this room: ');
+                for (const [client, id] of room)
+                    console.log(`User ${id} inside room ${roomId}`);
+
             
                 for (const [client] of room)
                     if (client !== ws && client.readyState === WebSocket.OPEN) 
@@ -47,7 +52,7 @@ wss.on('connection', ws => {
             case EventTypes.CLIENT_CREATE_ROOM: {
                 const roomId = Math.random().toString(36).slice(2, 10);
                 const room = new Map();
-
+                console.log("PASSWORD: " ,data.password);
                 room.password = (data.password || null);
                 rooms.set(roomId, room);
 
@@ -69,9 +74,18 @@ wss.on('connection', ws => {
             } break;
             
             case EventTypes.CLIENT_VALIDATE_PASSWORD: {
+                const room = rooms.get(data.roomId);
+                if (!room) {
+                    ws.send(JSON.stringify({
+                        type: EventTypes.SERVER_PASSWORD_VALIDATION,
+                        success: false,
+                        error: "Room not found"
+                    }));
+                    return;
+                }
                 ws.send(JSON.stringify({
                     type: EventTypes.SERVER_PASSWORD_VALIDATION,
-                    success: rooms.get(data.roomId).password === data.password
+                    success: room.password === data.password
                 }));
             } break;
 

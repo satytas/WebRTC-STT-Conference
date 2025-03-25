@@ -121,7 +121,7 @@ input:focus {
 }
 
 #joinPrompt input, #createPrompt input {
-  width: 100%;
+  width: 170%;
   max-width: 400px;
   padding: 16px 20px;
   font-size: 1.1rem;
@@ -130,7 +130,7 @@ input:focus {
 
 #landing button, #joinPrompt button, #createPrompt button {
   margin: 8px 0;
-  width: 100%;
+  width: 170%;
   max-width: 400px;
   padding: 16px 24px;
   font-size: 1.1rem;
@@ -197,6 +197,8 @@ input:focus {
 }
 
 .video-container {
+  min-width: 320px; /* Adjust based on your design */
+  min-height: 240px; /* Adjust based on your design */
   position: relative;
   border-radius: var(--border-radius);
   overflow: hidden;

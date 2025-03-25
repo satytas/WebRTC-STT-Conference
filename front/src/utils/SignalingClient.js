@@ -1,4 +1,4 @@
-import { EventTypes } from './main.js';
+import { EventTypes } from './EventTypes.js';
 
 export class SignalingClient {
     constructor(userId) {
@@ -7,6 +7,8 @@ export class SignalingClient {
         this.handlers = {};
         
         this.ws = null;
+
+        console.log(`C- ${this.userId}'s SignalingClient`);
     }
 
     connect() {
@@ -37,6 +39,8 @@ export class SignalingClient {
             };
         });
     }
+
+    getUserId() { return this.userId }
 
     setHandler(type, handler) { this.handlers[type] = handler }
     
@@ -74,6 +78,7 @@ export class SignalingClient {
 
     validatePassword(roomId, password) {
         return new Promise((resolve, reject) => {
+            console.log(`pass-"${password}"`);
             if (this.pendingRequests[EventTypes.SERVER_PASSWORD_VALIDATION]) {
                 reject(new Error("Another password validation is in progress"));
                 return;
