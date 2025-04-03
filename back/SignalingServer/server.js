@@ -5,6 +5,8 @@ const wss = new WebSocketServer({ port: 8080 });
 
 const rooms = new Map(); // Map<roomId, Map<ws, userId>>
 
+//WEBSOCKET.OPEN = 1 due to changing import
+
 wss.on('connection', ws => {
   ws.on('message', message => {
     const data = JSON.parse(message);
@@ -20,7 +22,7 @@ wss.on('connection', ws => {
         console.log(`User ${userId} joined room ${roomId} (${room.size}) | `);
 
         for (const [client] of room)
-          if (client !== ws && client.readyState === WebSocket.OPEN)
+          if (client !== ws && client.readyState === 1)
             client.send(JSON.stringify({ type: EventTypes.SERVER_NEW_USER, userId }));
 
       } break;
@@ -74,7 +76,7 @@ wss.on('connection', ws => {
             const senderId = users.get(ws);
             
             for (const [client, id] of users) {
-              if (id === data.target && client.readyState === WebSocket.OPEN)
+              if (id === data.target && client.readyState === 1)
                 client.send(JSON.stringify({ ...data, from: senderId }));
             }
             break;
@@ -94,7 +96,7 @@ wss.on('connection', ws => {
 
         if (users.size > 0) {
           for (const [client, id] of users) {
-            if (client.readyState === WebSocket.OPEN) {
+            if (client.readyState === 1) {
               client.send(JSON.stringify({
                 type: EventTypes.PEER_USER_LEFT,
                 userId: userId
