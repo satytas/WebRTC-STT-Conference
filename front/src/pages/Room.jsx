@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { WebRTCClient } from '../utils/WebRTCClient';
+import { SttDataHandler } from '../utils/SttDataHandler';
 import { useSignaling } from '../context/SignalingContext';
 
 function Room() {
@@ -34,6 +35,10 @@ function Room() {
 
       const audioTrack = webRTCClientRef.current.localStream.getAudioTracks()[0];
       const videoTrack = webRTCClientRef.current.localStream.getVideoTracks()[0];
+
+      const sttDataHandler = new SttDataHandler(audioTrack);
+      sttDataHandler.init();
+
       setIsMuted(!audioTrack.enabled);
       setIsVideoOff(!videoTrack.enabled);
     }
