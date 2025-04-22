@@ -11,7 +11,7 @@ function CreateRoom() {
   const handleCreate = async () => {
     try {
       const result = await signalingClient.createRoom(password || null);
-      console.log('password.trim() ', password, 'result: ', result);
+      console.log('Password- ', password);
       const roomId = result.roomId;
 
       const webRTCClient = new WebRTCClient(signalingClient);

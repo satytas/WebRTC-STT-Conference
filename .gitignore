@@ -8,6 +8,9 @@ front/.env.production
 # Backend
 back/.env
 
+# Stt
+stt/tmp/
+
 # Logs
 logs
 npm-debug.log*

@@ -26,7 +26,7 @@ export class WebRTCClient {
       this.localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       const audioTrack = this.localStream.getAudioTracks()[0];
       if (audioTrack) {
-        audioTrack.enabled = false; // Start muted
+        audioTrack.enabled = true; // Start muted
       }
       await this.createPeerConnection();
       console.log(`U- ${this.userId}'s WebRTCClient initialized with local stream`);
