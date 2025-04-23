@@ -10,8 +10,12 @@ import time
 app = Flask(__name__)
 CORS(app, origins=["http://localhost:5173"])
 
+# Counter for unique filenames
+file_counter = 0
+
 @app.route('/get-audio', methods=['POST'])
 def get_data():
+    global file_counter
     if 'audio_segment' not in request.files:
         return jsonify({'error': 'No audio provided'}), 400
 
@@ -42,7 +46,7 @@ def get_data():
 
         # MIGHT NOT NEED - work with floats
         # Scale to 16-bit PMC - way to store audio, each sample is 16-it int (from -32768 to 32767)
-        # (audio_data * 32767) - scales flotation point samples to 16 bit integers, clip(-32768, 32767) - make sure values stay in 16 it range, astype converts to 16 bit
+        # (audio_data * 32767) - scales flotation point samples to 16 bit integers, clip(-32768, 32767) - make sure values stay in 16 bit range, astype converts to 16 bit
         audio_data = (audio_data * 32767).clip(-32768, 32767).astype(np.int16) 
 
         # Write WAV file
@@ -53,7 +57,8 @@ def get_data():
         # Save WAV file
         file_path = os.path.join(os.getcwd(), 'stt', 'tmp')
         os.makedirs(file_path, exist_ok=True)
-        wav_filename = f"temp_audio_{int(time.time())}.wav"
+        wav_filename = f"temp_audio_{file_counter}.wav"
+        file_counter += 1 # Increment counter for next file
         with open(os.path.join(file_path, wav_filename), 'wb') as f:
             f.write(wav_data)
 
