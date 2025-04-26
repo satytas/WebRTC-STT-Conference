@@ -10,7 +10,6 @@ import time
 app = Flask(__name__)
 CORS(app, origins=["http://localhost:5173"])
 
-# Counter for unique filenames
 file_counter = 0
 
 @app.route('/get-audio', methods=['POST'])
@@ -58,7 +57,7 @@ def get_data():
         file_path = os.path.join(os.getcwd(), 'stt', 'tmp')
         os.makedirs(file_path, exist_ok=True)
         wav_filename = f"temp_audio_{file_counter}.wav"
-        file_counter += 1 # Increment counter for next file
+        file_counter += 1
         with open(os.path.join(file_path, wav_filename), 'wb') as f:
             f.write(wav_data)
 
