@@ -19,13 +19,21 @@ PHONEMES = [
     'G',    # (g)ood
     'UH'    # g(oo)d
 ]
+
 NUM_STATES = len(PHONEMES)
+
 MFCC_DIM = 13  # Observation vector dimension
+
 STATE_MAP = {phoneme: i for i, phoneme in enumerate(PHONEMES)} # access states as indexes
+
 INDEX_MAP = {i: phoneme for i, phoneme in enumerate(PHONEMES)} # access states as strings
+
 INITIAL_PROBS = np.zeros(NUM_STATES)
+
 TRANSITION_MATRIX = np.zeros((NUM_STATES, NUM_STATES))
+
 EMISION_MEANS = np.zeros((NUM_STATES, MFCC_DIM))
+
 EMISION_CONVARIOANCES = np.zeros((NUM_STATES, MFCC_DIM, MFCC_DIM))
 
 HMM_PARAMS = {
@@ -185,7 +193,7 @@ def init_hmm_params(filepath=None):
 def print_hmm_params(hmm_params):
     np.set_printoptions(precision=3, suppress=True)
     print("\n=== HMM Parameters ===\n")
-
+    
     print(f"Phonemes ({len(hmm_params['phonemes'])}): {hmm_params['phonemes']}")
     print(f"Number of States: {hmm_params['num_states']}")
     print(f"MFCC Dimension: {hmm_params['mfcc_dim']}\n")
@@ -208,5 +216,6 @@ def print_hmm_params(hmm_params):
 
     np.set_printoptions() 
 
-HMM_PARAMS = init_hmm_params(PARAMS_FILE)
-print_hmm_params(HMM_PARAMS)
+if __name__ == "__main__":
+    HMM_PARAMS = init_hmm_params(PARAMS_FILE)
+    print_hmm_params(HMM_PARAMS)
