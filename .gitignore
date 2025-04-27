@@ -1,15 +1,11 @@
 # Frontend
 front/dist/
-front/.env
-front/.env.local
-front/.env.development
-front/.env.production
-
-# Backend
-back/.env
 
 # Stt
 stt/tmp/
+
+# Python
+__pycache__/
 
 # Logs
 logs
@@ -20,10 +16,12 @@ pnpm-debug.log*
 lerna-debug.log*
 
 # General
+node_modules/
+dist/
+.vscode/
+.venv/
+.env/
 .DS_Store
 Thumbs.db
 *.tmp
 *.txt
-.vscode/
-node_modules/
-dist/
