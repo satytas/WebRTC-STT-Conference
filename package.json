@@ -9,6 +9,7 @@
     },
     "dependencies": {
         "file-saver": "^2.0.5",
-        "file-server": "^2.2.1"
+        "file-server": "^2.2.1",
+        "ws": "^8.18.1"
     }
 }
