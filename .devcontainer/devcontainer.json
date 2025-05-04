@@ -6,7 +6,19 @@
         "version": "3.11"
       }
     },
-    "postCreateCommand": "npm install && cd front && npm install && cd ../back/SignalingServer && npm install && cd ../stt && pip install -r requirements.txt",
+    "postCreateCommand": "npm install && cd front && npm install && cd ../back/SignalingServer && npm install && cd ../stt && python -m venv venv && source venv/bin/activate && pip install -r requirements.txt",
+    "portsAttributes": {
+      "3000": {
+        "label": "Backend server",
+        "onAutoForward": "openBrowser",
+        "visibility": "public"
+      },
+      "5173": {
+        "label": "Vite frontend",
+        "onAutoForward": "openBrowser",
+        "visibility": "public"
+      }
+    },
     "customizations": {
       "vscode": {
         "extensions": [
@@ -17,4 +29,3 @@
       }
     }
   }
-x  

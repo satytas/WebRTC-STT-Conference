@@ -3,7 +3,7 @@ from flask_cors import CORS
 import processor as stt
 
 app = Flask(__name__) # Initialize the flask server
-
+    
 CORS(app, origins=["http://localhost:5173"]) # Define the CORS
 
 stt.load_hmm() # Uninitialize the hmm
