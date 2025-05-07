@@ -36,7 +36,7 @@ function Room() {
       const audioTrack = webRTCClientRef.current.localStream.getAudioTracks()[0];
       const videoTrack = webRTCClientRef.current.localStream.getVideoTracks()[0];
 
-      const sttDataHandler = new SttDataHandler(audioTrack);
+      const sttDataHandler = new SttDataHandler(audioTrack, 1000);
       sttDataHandler.init();
 
       setIsMuted(!audioTrack.enabled);
