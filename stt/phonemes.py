@@ -2,22 +2,48 @@ import numpy as np
 
 PARAMS_FILE = "phonems_arrays.npz" 
 
-
+# From https://github.com/cmusphinx/cmudict/blob/master/cmudict.phones
 PHONEMES = [
-    'SIL',  # Silence / Background Noise
-    'HH',   # (h)i, (h)ello
-    'AY',   # h(i), b(ye)
-    'EH',   # h(e)llo, y(e)s
-    'L',    # he(ll)o
-    'OW',   # hell(o), n(o)
-    'Y',    # (y)es
-    'S',    # ye(s)
-    'N',    # (n)o
-    'B',    # (b)ye, (b)ad
-    'AE',   # b(a)d
-    'D',    # ba(d), goo(d)
-    'G',    # (g)ood
-    'UH'    # g(oo)d
+    "SIL",
+    "AA",
+    "AE",
+    "AH",
+    "AO",
+    "AW",
+    "AY",
+    "B",
+    "CH",
+    "D",
+    "DH",
+    "EH",
+    "ER",
+    "EY",
+    "F",
+    "G",
+    "HH",
+    "IH",
+    "IY",
+    "JH",
+    "K",
+    "L",
+    "M",
+    "N",
+    "NG",
+    "OW",
+    "OY",
+    "P",
+    "R",
+    "S",
+    "SH",
+    "T",
+    "TH",
+    "UH",
+    "UW",
+    "V",
+    "W",
+    "Y",
+    "Z",
+    "ZH"
 ]
 
 NUM_STATES = len(PHONEMES)
@@ -189,33 +215,3 @@ def init_hmm_params(filepath=None):
         "emission_covariances": EMISION_CONVARIOANCES,
     }
     return final_params
-
-def print_hmm_params(hmm_params):
-    np.set_printoptions(precision=3, suppress=True)
-    print("\n=== HMM Parameters ===\n")
-    
-    print(f"Phonemes ({len(hmm_params['phonemes'])}): {hmm_params['phonemes']}")
-    print(f"Number of States: {hmm_params['num_states']}")
-    print(f"MFCC Dimension: {hmm_params['mfcc_dim']}\n")
-
-    print("Initial Probabilities:")
-    print(hmm_params['initial_probs'])
-    print()
-
-    print("Transition Matrix (showing first 5x5 block):")
-    print(hmm_params['transition_matrix'][:5, :5])
-    print()
-
-    print("Emission Means (showing first 3 rows):")
-    print(hmm_params['emission_means'][:3])
-    print()
-
-    print("Emission Covariances (showing first covariance matrix):")
-    print(hmm_params['emission_covariances'][0])
-    print()
-
-    np.set_printoptions() 
-
-if __name__ == "__main__":
-    HMM_PARAMS = init_hmm_params(PARAMS_FILE)
-    print_hmm_params(HMM_PARAMS)
