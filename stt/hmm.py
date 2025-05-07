@@ -111,6 +111,60 @@ class HMM:
 
         return beta_table # Return the completed beta table
 
+    def _calculate_log_O(self, log_alpha):
+        # Helper function to get log P(O|lambda) from the alpha table
+
+        if log_alpha is None:
+            return LOG_ZERO
+        
+        T = log_alpha.shape[0]
+        if T == 0:
+            return LOG_ZERO
+        
+        # calculates the sum for all alpha at time T to get the general P of the obs sequence to be in our model
+        log_prob_O = logsumexp(log_alpha[T - 1, :])
+        return log_prob_O
+
+    def _calculate_gama(self, log_alpha, log_beta):
+        # Check the tables exist and they both have the same dims
+        if log_alpha is None or log_beta is None or log_alpha.shape != log_beta.shape:
+            print("Gamma Error: Invalid alpha or beta tables.")
+            return None
+
+        T, N = log_alpha.shape
+        if T == 0:
+            print("Gamma Warning: Cannot calculate gamma for T=0.")
+            return None
+
+
+        # 1. Calculate total log probability P(O|lambda)
+        log_prob_O = self._calculate_log_O(log_alpha)
+
+        # Make sure the observation sequence is possible (P(O|lambda) > 0)
+        if log_prob_O <= LOG_ZERO:
+            print("Gamma Warning: Sequence probability is zero or invalid. Cannot calculate gamma.")
+            # Return table of LOG_ZERO as gamma is undefined/zero
+            return np.full((T, N), LOG_ZERO)
+
+
+        # 2. Calculate unnormalized log gamma
+        # Log probability of each state given the O before in and after it
+        log_gamma_unnormalized = log_alpha + log_beta
+
+
+        # 3. Normalize to get the probability
+        # Normalize by the P(O|lambda) to so row will add up to 1
+        log_gamma = log_gamma_unnormalized - log_prob_O
+
+        # Second Numerical Normalization
+        # Makes sure sum over states is exactly 0 for each time step
+        for t in range(T):
+            current_log_sum = logsumexp(log_gamma[t, :])
+            if np.isfinite(current_log_sum): # Make sure not to subtract -inf
+                log_gamma[t, :] -= current_log_sum
+
+        return log_gamma
+
     def viterbi_decode(self, observations):
         T = observations.shape[0]
         if T == 0:
