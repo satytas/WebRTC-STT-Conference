@@ -1,6 +1,7 @@
 import numpy as np
 import phonemes as ph
 from scipy.stats import multivariate_normal
+from scipy.special import logsumexp
 
 epsilon = 1e-10
 LOG_ZERO = -np.inf # for paths transitions that not possible
@@ -35,6 +36,80 @@ class HMM:
             return log_pdf
         except Exception as e:
             return LOG_ZERO
+
+    def create_forward_table(self, observations):
+        T = observations.shape[0]
+        if T == 0:
+            return None # return if no observations
+
+        N = self.N
+
+
+        # 1. Create the alpha table
+        alpha_table = np.full((T, N), LOG_ZERO) # fill with log_zero for 0 prob
+
+
+        # 2. Initialization - the likelihood for all states at t=0
+        for j in range(N):
+            log_B_j_O0 = self._log_emission_prob(observations[0], j)
+            if log_B_j_O0 > LOG_ZERO:
+                alpha_table[0, j] = self.log_pi[j] + log_B_j_O0
+
+
+        # 3. Induction from t1 to T-1
+        for t in range(1, T): # For each subsequent time step
+            for j in range(N): # For each current state j
+                log_B_j_Ot = self._log_emission_prob(observations[t], j)
+
+                if log_B_j_Ot > LOG_ZERO: # Only if emission is possible for this state
+                    # Calculate for all N states, the P of transitioning to j & the P of them being the state in qt-1 given the obs sequence
+                    log_prev_alpha_transitions = alpha_table[t-1, :] + self.log_A[:, j]
+
+                    # Sum all posable prev alpha transitions to j to get the general prob of qt = j
+                    log_sum_from_prev = logsumexp(log_prev_alpha_transitions)
+
+                    # Add the emission prob for j given prev obs and update the alpha table 
+                    alpha_table[t, j] = log_sum_from_prev + log_B_j_Ot
+                # Else: alpha_table[t, j] remains LOG_ZERO
+
+        return alpha_table # Return the completed alpha table
+
+    def create_backward_table(self, observations):
+        T = observations.shape[0]
+        if T == 0:
+            return None
+
+        N = self.N
+
+
+        # 1. Create beta table
+        beta_table = np.full((T, N), LOG_ZERO) # fill with log_zero for 0 prob
+
+
+        # 2. Initialization - the likelihood for all states at t=T-1
+        # For all states i at Beta(T-1, i) = 0
+        beta_table[T - 1, :] = 0.0 # log(1) = 0
+
+
+        # 3. Induction from T-2 to 0
+        for t in range(T - 2, -1, -1): # Iterate backwards through time from T-2
+            for i in range(N): # For each state i at qt
+                # Calculate for all emissions probs for being at state j at t+1 when seeing Ot+1
+                log_B_all_j_Ot1 = np.array([self._log_emission_prob(observations[t+1], j) for j in range(N)])
+
+                # For all reachable states from current state i & they emission prob possible 
+                valid_next_steps = (beta_table[t+1, :] > LOG_ZERO) & (log_B_all_j_Ot1 > LOG_ZERO)
+                if np.any(valid_next_steps):
+                    # Calculate the prob of beings at state i given the future obs sequence for all next posable states
+                    terms = (
+                            self.log_A[i, valid_next_steps] + \
+                            log_B_all_j_Ot1[valid_next_steps] + \
+                            beta_table[t+1, valid_next_steps])
+
+                    beta_table[t, i] = logsumexp(terms)
+                # All other invalid steps remains LOG_ZERO
+
+        return beta_table # Return the completed beta table
 
     def viterbi_decode(self, observations):
         T = observations.shape[0]
@@ -106,36 +181,12 @@ class HMM:
 
         return best_path, max_final_log_prob
 
-
-if __name__ == "__main__":
-    print("\n=== Initializing HMM Parameters ===")
-    ph.HMM_PARAMS = ph.init_hmm_params()
-
-    if ph.HMM_PARAMS:
-        ph.print_hmm_params(ph.HMM_PARAMS)
-
-        print("\n=== Building HMM Model ===")
-        hmm_model = HMM(ph.HMM_PARAMS)
-        assert len(hmm_model.emission_models) == hmm_model.N
-
-        print("\n=== Testing Viterbi Decoding ===")
-        T_test = 25
-        dummy_obs = np.random.rand(T_test, hmm_model.mfcc_dim) * 0.5  # small random data scale
-
-        print(f"Generating {T_test} dummy MFCC observations...")
-        print("Starting Viterbi decoding...")
-        
-        best_path, final_log_prob = hmm_model.viterbi_decode(dummy_obs)
-
-        print("Finished Viterbi decoding.\n")
-        print(f"Final Log-Probability: {final_log_prob:.2f}")
-        print(f"Best Path Length: {len(best_path)} states")
-
+    def decode_to_phonemes(self, observations):
+        """Calls Viterbi and converts state indices to phoneme names."""
+        best_path, log_prob = self.viterbi_decode(observations)
+         
         if best_path:
-            phoneme_sequence = [hmm_model.index_map[idx] for idx in best_path]
-            print(f"\nDecoded Phoneme Sequence:\n{' -> '.join(phoneme_sequence)}")
-        else:
-            print("No valid path found.")
+            phoneme_sequence = [self.index_map[idx] for idx in best_path]
+            phoneme_sequence = ' -> '.join(phoneme_sequence)
 
-    else:
-        print("\nHMM Parameters initialization failed.")
+        return best_path, phoneme_sequence, log_prob
