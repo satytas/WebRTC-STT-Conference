@@ -125,7 +125,7 @@ class HMM:
         log_prob_O = logsumexp(log_alpha[T - 1, :])
         return log_prob_O
 
-    def _calculate_gama(self, log_alpha, log_beta):
+    def _calculate_gamma(self, log_alpha, log_beta):
         # Check the tables exist and they both have the same dims
         if log_alpha is None or log_beta is None or log_alpha.shape != log_beta.shape:
             print("Gamma Error: Invalid alpha or beta tables.")
@@ -222,6 +222,108 @@ class HMM:
         return log_xi
 
         # Inside HMM class in hmm_model.py
+
+    def baum_welch_step(self, observations):
+        # Make sure we are working with a valid obs sequence
+        T, D = observations.shape
+        N = self.N
+        if T == 0: return LOG_ZERO
+
+        # E-Step: Calculate the necessary components
+        # Alpha, Beta, P(O | lambda), Gamma, Xi, Gamma - expo
+        log_alpha = self._calculate_alpha(observations)
+        if log_alpha is None: return LOG_ZERO
+
+        log_prob_O = self._calculate_log_O(log_alpha)
+        if log_prob_O <= LOG_ZERO: return LOG_ZERO
+
+        log_beta = self._calculate_beta(observations)
+        if log_beta is None: return LOG_ZERO
+
+        log_gamma = self._calculate_gamma(log_alpha, log_beta)
+        if log_gamma is None: return LOG_ZERO
+
+        log_xi = self._calculate_xi(observations, log_alpha, log_beta, log_prob_O)
+        if log_xi is None: return LOG_ZERO
+
+        # Convert the gama log back to expo for use with mfcc calculations
+        gamma = np.exp(log_gamma)
+
+
+        # Step: Re-estimate new parameters
+
+        # 1. Re-estimate Pi
+        # log pi_i = log gamma_0(i) (normalized)
+        new_log_pi = log_gamma[0, :] - logsumexp(log_gamma[0, :]) # Normalize to ensure logsumexp=0
+
+
+        # 2. Re-estimate A
+        # log A_ij = log( Sum_t xi_t(i,j) ) - log( Sum_t gamma_t(i) )
+        new_log_A = np.full((N, N), LOG_ZERO)
+        # Sum gamma up to T-2 as it corresponds to the denominator for transitions
+        log_sum_gamma_up_to_Tminus2 = np.array([logsumexp(log_gamma[:-1, i]) for i in range(N)]) # Shape (N,)
+
+        for i in range(N):
+            if log_sum_gamma_up_to_Tminus2[i] > LOG_ZERO: # Only update if state i was ever left
+                for j in range(N):
+                    # Sum xi over all time steps t=0 to T-2
+                    log_sum_xi_ij = logsumexp(log_xi[:, i, j])
+                    if log_sum_xi_ij > LOG_ZERO: # Only update if transition i->j ever expected
+                        new_log_A[i, j] = log_sum_xi_ij - log_sum_gamma_up_to_Tminus2[i]
+
+            # Re-normalize each row of log_A to ensure transitions from state i sum to 1 (logsumexp=0)
+            row_log_sum = logsumexp(new_log_A[i, :])
+            if np.isfinite(row_log_sum) and row_log_sum > LOG_ZERO:
+                 new_log_A[i, :] -= row_log_sum
+
+        # 3. Re-estimate Emissions (Means and Covariances)
+        new_emission_means = np.zeros((N, D))
+        new_emission_covariances = np.zeros((N, D, D))
+
+        for j in range(N): # For each state j
+            # Denominator: Sum_t gamma_t(j) = Expected number of times in state j
+            sum_gamma_j = np.sum(gamma[:, j]) # Sum probabilities
+
+            # Avoid division by zero if state j was never expected to be visited
+            if sum_gamma_j > epsilon:
+                # 3.1 Update Mean
+
+                # Numerator: Sum_t ( gamma_t(j) * O_t ) -> weighted sum of observations
+                weighted_sum_obs = np.einsum('t,td->d', gamma[:, j], observations)
+                # new mean = weighted sum / sum of weights
+                new_emission_means[j] = weighted_sum_obs / sum_gamma_j
+
+                # 3.2 Update Covariance
+                # Numerator: Sum_t ( gamma_t(j) * outer(O_t - new_mean_j, O_t - new_mean_j) )
+                deviations = observations - new_emission_means[j] # Use NEW mean
+                # Weighted sum of outer products
+                weighted_sum_cov = np.einsum('t,ti,tj->ij', gamma[:, j], deviations, deviations)
+                # new cov = weighted sum / sum of weights
+                new_emission_covariances[j] = weighted_sum_cov / sum_gamma_j
+                # Add small diagonal value for numerical stability
+                new_emission_covariances[j] += np.identity(D) * epsilon
+            else:
+                # Keep old parameters if state j had zero expected occupancy
+                new_emission_means[j] = self.emission_models[j].mean
+                new_emission_covariances[j] = self.emission_models[j].cov
+
+        # 4. Update the Model's parameters
+        self.log_pi = new_log_pi
+        self.log_A = new_log_A
+
+        # Rebuild emission models
+        self.emission_models = []
+        for i in range(N):
+             self.emission_models.append(
+                 multivariate_normal(mean=new_emission_means[i], cov=new_emission_covariances[i], allow_singular=True)
+             )
+
+        # Also update the stored raw parameters
+        self.emission_means = new_emission_means
+        self.emission_covariances = new_emission_covariances
+
+        # Return likelihood of the old model to use for convergence check
+        return log_prob_O
 
     def viterbi_decode(self, observations):
         T = observations.shape[0]
