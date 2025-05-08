@@ -37,7 +37,7 @@ class HMM:
         except Exception as e:
             return LOG_ZERO
 
-    def create_forward_table(self, observations):
+    def _calculate_alpha(self, observations):
         T = observations.shape[0]
         if T == 0:
             return None # return if no observations
@@ -74,7 +74,7 @@ class HMM:
 
         return alpha_table # Return the completed alpha table
 
-    def create_backward_table(self, observations):
+    def _calculate_beta(self, observations):
         T = observations.shape[0]
         if T == 0:
             return None
@@ -164,6 +164,64 @@ class HMM:
                 log_gamma[t, :] -= current_log_sum
 
         return log_gamma
+
+        # Inside HMM class in hmm_model.py
+
+    def _calculate_xi(self, observations, log_alpha, log_beta, log_prob_O):
+        #check the tables exist and have valid data
+        if log_alpha is None or log_beta is None or log_prob_O <= LOG_ZERO:
+            print("Xi Error: Invalid alpha, beta, or sequence probability.")
+            return None
+
+        T, N = log_alpha.shape
+        # Check the obs sequence size (both alpha and beta must have the same dim)
+        if T <= 1: # Need at least 2 time steps for transitions
+             print("Xi Warning: Cannot calculate Xi for sequence length <= 1.")
+             return None
+
+
+        # 1. Initialize log Xi table with log(0)
+        # Save the probability of transitining from each state NxN, at each time step at t - xT
+        log_xi = np.full((T - 1, N, N), LOG_ZERO)
+
+
+        # 2. Pre-calculate all emission probabilities
+        # Will create a T-1xN table
+        # Other wise for each state j at time t, we will need to calculate the same emisson for each state i- N times
+        log_next_emission_probs = np.array([
+            [self._log_emission_prob(observations[t + 1], j) for j in range(N)]
+            for t in range(T - 1)
+        ]) 
+
+
+        # 3. Calculate Xi for each time step t from 0 to T-2
+        for t in range(T - 1): # For each time t
+            for i in range(N): # From state i at time t
+                # Get the first component for the xi calculation
+                log_alpha_t_i = log_alpha[t, i]
+                if log_alpha_t_i <= LOG_ZERO:
+                    continue # Skip if the path to i at t is imposable
+
+                for j in range(N): # For each transitioning state j for i
+                    # Get the rest of the needed components for the xi calculation
+                    log_A_ij = self.log_A[i, j] # The prob of transitioning fro state i to j
+                    log_B_j_Ot1 = log_next_emission_probs[t, j] # The prob of seeing state j at Ot
+                    log_beta_t1_j = log_beta[t+1, j] # The prob of being at state j at t+1 knowing the next obs sequence
+
+                    # Check that each of the proboilities valid for the rest of the components
+                    if log_A_ij > LOG_ZERO and log_B_j_Ot1 > LOG_ZERO and log_beta_t1_j > LOG_ZERO:
+                        # All parts of the path segment have non-zero probability
+
+                        # Calculate the likelihood of xi_t_i_j
+                        log_xi_likelihood = log_alpha_t_i + log_A_ij + log_B_j_Ot1 + log_beta_t1_j
+
+                        # Normalize by the chance of O being in the model - P(O|lambda)
+                        # To get the final xi probability
+                        log_xi[t, i, j] = log_xi_likelihood - log_prob_O
+
+        return log_xi
+
+        # Inside HMM class in hmm_model.py
 
     def viterbi_decode(self, observations):
         T = observations.shape[0]
