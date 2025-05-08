@@ -62,7 +62,7 @@ def run_forward_test(hmm, observations):
         return
     
     print("\n--- Testing Forward Algorithm ---")
-    alpha = hmm.create_forward_table(observations)
+    alpha = hmm._calculate_alpha(observations)
     if alpha is not None:
         print("Forward calculation completed.")
         print(f"Alpha table shape: {alpha.shape}")
@@ -80,7 +80,7 @@ def run_backward_test(hmm, observations):
         return
     
     print("\n--- Testing Backward Algorithm ---")
-    beta = hmm.create_backward_table(observations)
+    beta = hmm._calculate_beta(observations)
     if beta is not None:
         print("Backward calculation completed.")
         print(f"Beta table shape: {beta.shape}")
@@ -110,11 +110,11 @@ if __name__ == "__main__":
     hmm_instance, params = setup_hmm(load_from_file=False)
     dummy_observations = gen_dummy_obs(hmm_instance.mfcc_dim, 25)
 
-    #print_hmm_params(params)
+    print_hmm_params(params)
 
     if hmm_instance and dummy_observations is not None:
-        #run_forward_test(hmm_instance, dummy_observations)
-        #run_backward_test(hmm_instance, dummy_observations)
+        run_forward_test(hmm_instance, dummy_observations)
+        run_backward_test(hmm_instance, dummy_observations)
         run_viterbi_test(hmm_instance, dummy_observations)
         pass
     else:
